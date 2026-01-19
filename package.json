@@ -1,0 +1,73 @@
+{
+	"name": "eslint-plugin-jsonv",
+	"version": "1.0.0",
+	"description": "ESLint plugin for @cldmv/jsonv files",
+	"type": "module",
+	"main": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"scripts": {
+		"build": "npm run build:js && npm run build:types",
+		"build:js": "node scripts/build.mjs",
+		"build:types": "tsc -p .configs/tsconfig.types.json"
+	},
+	"files": [
+		"dist/**",
+		"README.md"
+	],
+	"peerDependencies": {
+		"@cldmv/jsonv": "^1.0.0"
+	},
+	"devDependencies": {
+		"@cldmv/jsonv": "^1.0.0",
+		"typescript": "^5.9.3"
+	},
+	"keywords": [
+		"eslint",
+		"eslintplugin",
+		"jsonv",
+		"json5",
+		"linter",
+		"validation",
+		"parser",
+		"config",
+		"es2015",
+		"es2020",
+		"es2021",
+		"bigint",
+		"numeric-separators"
+	],
+	"author": {
+		"name": "Shinrai",
+		"company": "CLDMV",
+		"email": "git+npm@cldmv.net",
+		"url": "https://cldmv.net"
+	},
+	"contributors": [
+		{
+			"name": "CLDMV",
+			"url": "https://github.com/CLDMV"
+		}
+	],
+	"license": "Apache-2.0",
+	"funding": {
+		"type": "github",
+		"url": "https://github.com/sponsors/shinrai"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/CLDMV/jsonv-eslint-plugin-jsonv.git"
+	},
+	"bugs": {
+		"url": "https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/issues"
+	},
+	"homepage": "https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/#readme",
+	"engines": {
+		"node": ">=18.0.0"
+	}
+}

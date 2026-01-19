@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": false,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"declarationMap": true,
+		"rootDir": "..",
+		"outDir": "../dist",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ES2022",
+		"skipLibCheck": true,
+		"stripInternal": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": true
+	},
+	"include": ["../index.mjs"],
+	"exclude": ["../node_modules", "../dist", "../types", "../tests"]
+}
