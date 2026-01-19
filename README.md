@@ -28,14 +28,13 @@ npm install @cldmv/jsonv
 If you're developing the plugin:
 
 ```bash
-cd plugins/eslint-plugin-jsonv
 npm install
 npm run build
 ```
 
 This will:
-1. Compile TypeScript to JavaScript
-2. Generate type definitions
+1. Copy `index.mjs` into `dist/index.mjs`
+2. Generate type definitions into `dist/index.d.mts`
 3. Prepare the plugin for use
 
 ## Usage
@@ -65,11 +64,9 @@ The parser supports the following options:
   plugins: { jsonv },
   language: "jsonv/jsonv",
   languageOptions: {
-    parserOptions: {
-      year: 2025,           // Target ES year (2011, 2015, 2020, 2021, 2022-2025)
-      strictBigInt: false,  // Require 'n' suffix for large integers
-      mode: "jsonv"         // Parse mode: "jsonv", "json5", "json"
-    }
+    year: 2025,           // Target ES year (2011, 2015, 2020, 2021, 2022-2025)
+    strictBigInt: false,  // Require 'n' suffix for large integers
+    mode: "jsonv"         // Parse mode: "jsonv", "json5", "json"
   }
 }
 ```
@@ -101,17 +98,6 @@ The parser supports the following options:
 ### ES2021
 - Numeric separators (`1_000_000`, `0xFF_AA`, `0b1111_0000`)
 
-## Future Rules
-
-The plugin is designed to support custom rules:
-
-- `no-circular-references` - Enforce no circular internal references
-- `require-bigint-suffix` - Require 'n' suffix for integers > MAX_SAFE_INTEGER
-- `prefer-template-interpolation` - Prefer `${}` over string concatenation
-- `no-duplicate-keys` - Enforce unique object keys
-- `consistent-quotes` - Enforce single or double quotes consistently
-- `max-depth` - Limit nesting depth in objects/arrays
-
 ## Example
 
 **config.jsonv:**
@@ -142,4 +128,4 @@ The plugin is designed to support custom rules:
 
 ## License
 
-Copyright (c) 2026 Catalyzed Motivation Inc. All rights reserved.
+Apache-2.0. See [LICENSE](LICENSE).
