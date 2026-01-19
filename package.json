@@ -1,5 +1,5 @@
 {
-	"name": "eslint-plugin-jsonv",
+	"name": "@cldmv/eslint-plugin-jsonv",
 	"version": "1.0.0",
 	"description": "ESLint plugin for @cldmv/jsonv files",
 	"type": "module",
@@ -15,6 +15,9 @@
 		"build": "npm run build:js && npm run build:types",
 		"build:js": "node scripts/build.mjs",
 		"build:types": "tsc -p .configs/tsconfig.types.json"
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"files": [
 		"dist/**",
