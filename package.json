@@ -1,6 +1,6 @@
 {
 	"name": "@cldmv/eslint-plugin-jsonv",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "ESLint plugin for @cldmv/jsonv files",
 	"type": "module",
 	"main": "./dist/index.mjs",
@@ -24,10 +24,10 @@
 		"README.md"
 	],
 	"peerDependencies": {
-		"@cldmv/jsonv": "^1.0.1"
+		"@cldmv/jsonv": "^1.0.2"
 	},
 	"devDependencies": {
-		"@cldmv/jsonv": "^1.0.1",
+		"@cldmv/jsonv": "^1.0.2",
 		"typescript": "^5.9.3"
 	},
 	"keywords": [
