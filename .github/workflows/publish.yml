@@ -1,13 +1,9 @@
 #
-# @Project: eslint-plugin-jsonv
-# @Filename: /.github/workflows/publish.yml
-# @Date: 2025-09-15 13:21:31 -07:00 (1757967691)
-# @Author: Nate Hyson <CLDMV>
+# @Project: @cldmv/.github
+# @Filename: /examples/individual-repo-workflows/core-cicd/publish.yml
+# @Date: 2026-05-20 00:00:00 -07:00 (1779606000)
+# @Author: Nate Corcoran <CLDMV>
 # @Email: <Shinrai@users.noreply.github.com>
-# -----
-# @Last modified by: Nate Hyson <CLDMV> (Shinrai@users.noreply.github.com)
-# @Last modified time: 2026-01-18 20:55:32 -08:00 (1768798532)
-# -----
 # @Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
 #
 
@@ -15,98 +11,127 @@
 name: 📦 Release and Publish
 
 on:
-    pull_request:
-        types: [closed]
-        branches: [master, main]
-    workflow_dispatch:
-        inputs:
-            debug:
-                description: "Enable debug logging for troubleshooting"
-                type: boolean
-                required: false
-                default: false
-            dry_run:
-                description: "Dry run mode - validate everything but don't publish or create releases"
-                type: boolean
-                required: false
-                default: false
-            node_version:
-                description: "Node.js version to use (default: lts/*)"
-                type: string
-                required: false
-                default: "lts/*"
-            package_manager:
-                description: "Package manager (npm or yarn)"
-                type: string
-                required: false
-                default: "npm"
-            version:
-                description: "Version to publish (auto-detected from package.json if not provided)"
-                type: string
-                required: false
-                default: ""
-            publish_to_npm:
-                description: "Publish to NPM registry"
-                type: boolean
-                required: false
-                default: true
-            publish_to_github_packages:
-                description: "Publish to GitHub Packages registry"
-                type: boolean
-                required: false
-                default: true
-            min_node_version:
-                description: "Minimum Node.js version for matrix testing (enables matrix when set)"
-                type: string
-                required: false
-                default: "16.20.2"
-            max_node_major:
-                description: "Override max Node.js major version (default: 24)"
-                type: string
-                required: false
-                default: "24"
-            use_gpg:
-                description: "Enable GPG signing (if GPG secrets provided)"
-                type: boolean
-                required: false
-                default: false
+  push:
+    branches: [master, main]
+    paths-ignore:
+      - "**.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: "Enable debug logging for troubleshooting"
+        type: boolean
+        required: false
+        default: false
+      dry_run:
+        description: "Dry run mode - validate everything but don't publish or create releases"
+        type: boolean
+        required: false
+        default: false
+      node_version:
+        description: "Node.js version to use (default: lts/*)"
+        type: string
+        required: false
+        default: "lts/*"
+      package_manager:
+        description: "Package manager (npm or yarn)"
+        type: string
+        required: false
+        default: "npm"
+      test_environment:
+        description: "Environment for tests (affects NODE_ENV and NODE_OPTIONS --conditions flag)"
+        type: string
+        required: false
+        default: "development"
+      version:
+        description: "Version to publish (auto-detected from package.json if not provided)"
+        type: string
+        required: false
+        default: ""
+      publish_to_npm:
+        description: "Publish to NPM registry"
+        type: boolean
+        required: false
+        default: true
+      publish_to_github_packages:
+        description: "Publish to GitHub Packages registry"
+        type: boolean
+        required: false
+        default: true
+      min_node_version:
+        description: "Minimum Node.js version for matrix testing (enables matrix when set)"
+        type: string
+        required: false
+        default: "20"
+      max_node_major:
+        description: "Override max Node.js major version (default: 22)"
+        type: string
+        required: false
+        default: "22"
+      use_gpg:
+        description: "Enable GPG signing (if GPG secrets provided)"
+        type: boolean
+        required: false
+        default: false
 
-permissions:
-    id-token: write # Required for OIDC
-    contents: read
-    packages: write
+# NEVER cancel an in-flight publish — half-published versions are nasty to
+# clean up. Concurrent publishes for the same ref queue instead so they
+# serialize naturally.
+concurrency:
+  group: publish-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-    publish-package:
-        if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
-        uses: CLDMV/.github/.github/workflows/workflow-publish.yml@v1
-        with:
-            package_name: "@cldmv/slothlet" # Required: Your NPM package name
-            debug: ${{ github.event.inputs.debug == 'true' }}
-            dry_run: ${{ github.event.inputs.dry_run == 'true' }}
-            node_version: ${{ github.event.inputs.node_version || 'lts/*' }}
-            package_manager: ${{ github.event.inputs.package_manager || 'npm' }}
-            version: ${{ github.event.inputs.version || '' }}
-            publish_to_npm: ${{ github.event.inputs.publish_to_npm != 'false' }}
-            publish_to_github_packages: ${{ github.event.inputs.publish_to_github_packages != 'false' }}
-            publish_command: ""
-            github_packages_publish_command: ""
-            min_node_version: ${{ github.event.inputs.min_node_version || '16.20.2' }}
-            max_node_major: ${{ github.event.inputs.max_node_major || '24' }}
-            test_command: "npm test"
-            test_environment: "slothlet-dev"
-            build_command: "npm run build:ci"
-            is_prerelease: false
-            release_source_only: false
-            create_documentation: true
-            skip_performance_tests: false
-            skip_matrix_tests: false
-            use_gpg: ${{ github.event.inputs.use_gpg == 'true' }}
-        secrets:
-            NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-            BOT_APP_ID: ${{ secrets.CLDMV_BOT_APP_ID }}
-            BOT_APP_PRIVATE_KEY: ${{ secrets.CLDMV_BOT_APP_PRIVATE_KEY }}
-            TAGGER_NAME: ${{ secrets.CLDMV_BOT_NAME }}
-            TAGGER_EMAIL: ${{ secrets.CLDMV_BOT_EMAIL }}
-            GPG_PRIVATE_KEY: ${{ secrets.CLDMV_BOT_GPG_PRIVATE_KEY }}
-            GPG_PASSPHRASE: ${{ secrets.CLDMV_BOT_GPG_PASSPHRASE }}
+  publish-package:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    uses: CLDMV/.github/.github/workflows/workflow-publish.yml@v4
+    with:
+      package_name: "@cldmv/eslint-plugin-jsonv" # Required: replace with your NPM package name
+      debug: ${{ github.event.inputs.debug == 'true' }}
+      dry_run: ${{ github.event.inputs.dry_run == 'true' }}
+      node_version: ${{ github.event.inputs.node_version || 'lts/*' }}
+      package_manager: ${{ github.event.inputs.package_manager || 'npm' }}
+      version: ${{ github.event.inputs.version || '' }}
+      publish_to_npm: ${{ github.event.inputs.publish_to_npm != 'false' }}
+      publish_to_github_packages: ${{ github.event.inputs.publish_to_github_packages != 'false' }}
+      publish_command: ""
+      github_packages_publish_command: ""
+      min_node_version: ${{ github.event.inputs.min_node_version || '20' }}
+      max_node_major: ${{ github.event.inputs.max_node_major || '22' }}
+      test_command: "echo '✓ no tests defined'"
+      # test_command: "NODE_ENV=test npm test"  # Override NODE_ENV only
+      test_environment: ${{ github.event.inputs.test_environment || 'development' }} # Alternative to setting in test_command
+      build_command: "npm run build"
+      # --- Satellite packages (optional) ----------------------------------------
+      # Publish extra packages carved from this build's output (e.g. locale JSON,
+      # generated types) at the SAME version/commit as the core, each with its own
+      # @scope/name@version tag + GitHub Release. Uncomment to opt in.
+      #   extra_packages: a JSON [{ name, dir }] array, OR a glob (single '*' in the
+      #   final path segment, e.g. "dist-packages/*"). Empty = disabled.
+      #   build_subpackages_command: runs after build_command to produce
+      #   dist-packages/<name>/ — omit if build_command already does the carve.
+      # First publish of each new @scope/name needs a one-time token publish +
+      # trusted-publisher setup. Full details + the contract:
+      # docs/conventions/satellite-packages.md
+      # extra_packages: "dist-packages/*"
+      # build_subpackages_command: "npm run build:subpackages"
+      # --------------------------------------------------------------------------
+      is_prerelease: false
+      release_source_only: false
+      create_documentation: true
+      skip_performance_tests: false
+      skip_matrix_tests: false
+      use_gpg: ${{ github.event.inputs.use_gpg == 'true' }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      BOT_APP_CLIENT_ID: ${{ secrets.CLDMV_BOT_APP_CLIENT_ID }}
+      BOT_APP_PRIVATE_KEY: ${{ secrets.CLDMV_BOT_APP_PRIVATE_KEY }}
+      TAGGER_NAME: ${{ secrets.CLDMV_BOT_NAME }}
+      TAGGER_EMAIL: ${{ secrets.CLDMV_BOT_EMAIL }}
+      GPG_PRIVATE_KEY: ${{ secrets.CLDMV_BOT_GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.CLDMV_BOT_GPG_PASSPHRASE }}
