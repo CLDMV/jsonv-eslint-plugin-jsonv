@@ -4,7 +4,7 @@
 
 [![Contributors]][contributors_url] [![Sponsor shinrai]][sponsor_url]
 
-ESLint plugin for validating `.jsonv` files using the @cldmv/jsonv parser.
+ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://github.com/CLDMV/jsonv) parser.
 
 ## Features
 
