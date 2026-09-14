@@ -1,4 +1,8 @@
-# eslint-plugin-jsonv
+# @cldmv/eslint-plugin-jsonv
+
+[![npm version]][npm_version_url] [![npm downloads]][npm_downloads_url] [![GitHub downloads]][github_downloads_url] [![Last commit]][last_commit_url] [![npm last update]][npm_last_update_url]
+
+[![Contributors]][contributors_url] [![Sponsor shinrai]][sponsor_url]
 
 ESLint plugin for validating `.jsonv` files using the @cldmv/jsonv parser.
 
@@ -14,7 +18,7 @@ ESLint plugin for validating `.jsonv` files using the @cldmv/jsonv parser.
 ## Installation
 
 ```bash
-npm install --save-dev eslint-plugin-jsonv
+npm install --save-dev @cldmv/eslint-plugin-jsonv
 ```
 
 **Note:** This plugin requires `@cldmv/jsonv` as a peer dependency.
@@ -42,7 +46,7 @@ This will:
 ### ESLint Flat Config (eslint.config.mjs)
 
 ```javascript
-import jsonv from 'eslint-plugin-jsonv';
+import jsonv from '@cldmv/eslint-plugin-jsonv';
 
 export default [
   {
@@ -128,4 +132,25 @@ The parser supports the following options:
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+[![GitHub license]][github_license_url] [![npm license]][npm_license_url]
+
+Apache-2.0 © Shinrai / CLDMV
+
+[npm version]: https://img.shields.io/npm/v/%40cldmv%2Feslint-plugin-jsonv.svg?style=for-the-badge&logo=npm&logoColor=white&labelColor=CB3837
+[npm_version_url]: https://www.npmjs.com/package/@cldmv/eslint-plugin-jsonv
+[npm downloads]: https://img.shields.io/npm/dm/%40cldmv%2Feslint-plugin-jsonv.svg?style=for-the-badge&logo=npm&logoColor=white&labelColor=CB3837
+[npm_downloads_url]: https://www.npmjs.com/package/@cldmv/eslint-plugin-jsonv
+[npm last update]: https://img.shields.io/npm/last-update/%40cldmv%2Feslint-plugin-jsonv?style=for-the-badge&logo=npm&logoColor=white&labelColor=CB3837
+[npm_last_update_url]: https://www.npmjs.com/package/@cldmv/eslint-plugin-jsonv
+[npm license]: https://img.shields.io/npm/l/%40cldmv%2Feslint-plugin-jsonv.svg?style=for-the-badge&logo=npm&logoColor=white&labelColor=CB3837
+[npm_license_url]: https://www.npmjs.com/package/@cldmv/eslint-plugin-jsonv
+[github downloads]: https://img.shields.io/github/downloads/CLDMV/jsonv-eslint-plugin-jsonv/total?style=for-the-badge&logo=github&logoColor=white&labelColor=181717
+[github_downloads_url]: https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases
+[last commit]: https://img.shields.io/github/last-commit/CLDMV/jsonv-eslint-plugin-jsonv?style=for-the-badge&logo=github&logoColor=white&labelColor=181717
+[last_commit_url]: https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/commits
+[github license]: https://img.shields.io/github/license/CLDMV/jsonv-eslint-plugin-jsonv.svg?style=for-the-badge&logo=github&logoColor=white&labelColor=181717
+[github_license_url]: https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/HEAD/LICENSE
+[contributors]: https://img.shields.io/github/contributors/CLDMV/jsonv-eslint-plugin-jsonv.svg?style=for-the-badge&logo=github&logoColor=white&labelColor=181717
+[contributors_url]: https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/graphs/contributors
+[sponsor shinrai]: https://img.shields.io/github/sponsors/shinrai?style=for-the-badge&logo=githubsponsors&logoColor=white&labelColor=EA4AAA&label=Sponsor
+[sponsor_url]: https://github.com/sponsors/shinrai
