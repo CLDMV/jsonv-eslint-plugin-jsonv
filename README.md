@@ -6,6 +6,22 @@
 
 ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://github.com/CLDMV/jsonv) parser.
 
+## ✨ What's New
+
+### Latest: v1.0.12 (September 2026)
+
+- **A real ESLint AST for `.jsonv` files** — the `jsonv/jsonv` language now builds a positioned AST from `@cldmv/jsonv`'s `parseToAst()` instead of an empty `Program`. Rules can select objects, arrays, properties, literals, references and templates; reports land on the node they target instead of `1:0`; and inline `eslint-disable` / `eslint-enable` / `eslint-disable-next-line` comments now work. Requires `@cldmv/jsonv` 1.1.0 or later (#26).
+- [View full v1.0.12 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md)
+
+### Recent Releases
+
+- **v1.0.11** (September 2026) — language options are validated, parse errors report at their real position, and the plugin gained a vitest suite with a CI coverage badge (#16, #17, #18, #23, #24) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.11.md))
+- **v1.0.10** (September 2026) — the README links back to the jsonv repo (#15) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.10.md))
+- **v1.0.9** (September 2026) — corrected package name, badge row and license badges (#12) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.9.md))
+- **v1.0.8** (September 2026) — Node CI matrix updated for vitest 5 (max Node 26, min Node 22.12.0) (#10) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.8.md))
+
+📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
+
 ## Features
 
 - **Syntax Validation**: Validates jsonv syntax using the actual jsonv parser
@@ -72,6 +88,39 @@ The parser supports the following options:
     strictBigInt: false,  // Require 'n' suffix for large integers
     mode: "jsonv"         // Parse mode: "jsonv", "json5", "json"
   }
+}
+```
+
+### Inline Configuration
+
+The usual ESLint comments work inside `.jsonv` files: `// eslint-disable`, `/* eslint-disable <rule> */`, `/* eslint-enable */`, `// eslint-disable-line`, `// eslint-disable-next-line`, and `/* eslint <rule>: "off" */` rule configuration.
+
+### Writing Rules
+
+The `jsonv/jsonv` language exposes the document as an AST built from `@cldmv/jsonv`'s `parseToAst()`. Every node has a `loc` (1-based lines and columns) and a `range`, so reports on a node land on that node, and rules can use node types and selectors:
+
+| Node type | Children | Notes |
+|---|---|---|
+| `Program` | `body` | The document; `body` is the root value. `comments` and `tokens` hang off it. |
+| `ObjectExpression` | `properties` | `{ ... }` |
+| `Property` | `key`, `value` | `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key). |
+| `ArrayExpression` | `elements` | `[ ... ]` |
+| `Literal` | — | Strings, numbers, BigInt (`bigint` holds the digits), booleans, `null`, `Infinity`, `NaN`; `raw` is the source text. |
+| `Identifier` | — | An unquoted key, or an internal reference such as `backup: port`. |
+| `MemberExpression` | `object`, `property` | A dotted internal reference such as `server.port`. |
+| `TemplateLiteral` | `quasis`, `expressions` | A backtick string with `${...}` interpolation (a plain backtick string is a `Literal`). |
+| `TemplateElement` | — | A literal segment of a template. |
+
+```javascript
+// Report every string value containing "TODO", on the string itself
+create(context) {
+  return {
+    "Property > Literal.value"(node) {
+      if (typeof node.value === "string" && node.value.includes("TODO")) {
+        context.report({ node, message: "Unexpected TODO." });
+      }
+    }
+  };
 }
 ```
 

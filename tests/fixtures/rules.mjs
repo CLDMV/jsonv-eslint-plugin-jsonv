@@ -1,8 +1,8 @@
 /**
  * @fileoverview Fixture rules used to exercise the jsonv language through ESLint's
  * rule pipeline. The plugin ships no rules of its own yet, so these stand in for
- * a consumer's custom rule to prove the language supports reporting, options and
- * autofix.
+ * a consumer's custom rule to prove the language supports reporting, options,
+ * autofix and node-level visitors on the AST.
  */
 
 /**
@@ -65,5 +65,36 @@ export const maxLines = {
 	}
 };
 
+/**
+ * Reports each string value (not key) containing `TODO`, on the string's own node, and
+ * autofixes the marker to `DONE` inside that node's range.
+ * @type {import("eslint").Rule.RuleModule}
+ */
+export const noTodoValue = {
+	meta: {
+		type: "problem",
+		fixable: "code",
+		schema: [],
+		messages: { todo: "Unexpected TODO in the value of {{key}}." }
+	},
+	create(context) {
+		return {
+			"Property > Literal.value"(node) {
+				if (typeof node.value !== "string" || !node.value.includes("TODO")) return;
+				const property = context.sourceCode.getParent(node);
+				const key = property.key.type === "Identifier" ? property.key.name : String(property.key.value);
+				const [start] = node.range;
+				const offset = node.raw.indexOf("TODO");
+				context.report({
+					node,
+					messageId: "todo",
+					data: { key },
+					fix: (fixer) => fixer.replaceTextRange([start + offset, start + offset + 4], "DONE")
+				});
+			}
+		};
+	}
+};
+
 /** Fixture plugin carrying the rules above. */
-export const fixturePlugin = { rules: { "no-todo": noTodo, "max-lines": maxLines } };
+export const fixturePlugin = { rules: { "no-todo": noTodo, "max-lines": maxLines, "no-todo-value": noTodoValue } };

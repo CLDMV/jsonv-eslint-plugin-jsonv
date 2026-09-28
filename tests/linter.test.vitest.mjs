@@ -25,9 +25,8 @@ function lint(code, config = base) {
 }
 
 /**
- * Builds the single fatal message ESLint emits for a parse failure. `line`/`column` default to
- * 1:1 for reference errors, which jsonv still throws with no position (jsonv#32); a positioned
- * jsonv error (every parser/lexer failure) passes its real 1-based `line`/`column`.
+ * Builds the single fatal message ESLint emits for a parse failure, at the error's real
+ * 1-based `line`/`column` (jsonv positions every syntax and reference error).
  * @param {string} message - The parser's message (without the "Parsing error: " prefix).
  * @param {number} [line] - Expected 1-based line.
  * @param {number} [column] - Expected 1-based column.
@@ -35,7 +34,7 @@ function lint(code, config = base) {
  * @example
  * parsingError("Unexpected token: RBRACE at line 1, column 5", 1, 6);
  */
-function parsingError(message, line = 1, column = 1) {
+function parsingError(message, line, column) {
 	return { ruleId: null, fatal: true, severity: 2, message: `Parsing error: ${message}`, line, column };
 }
 
@@ -63,8 +62,9 @@ describe("Linter — malformed jsonv", () => {
 		["empty file", "", "Unexpected token: EOF at line 1, column 0", 1, 1],
 		["missing value", "{ a: }", "Unexpected token: RBRACE at line 1, column 5", 1, 6],
 		["unterminated array", "{\n  a: 1,\n  b: [1, 2\n}", "Expected ',' or ']' in array at line 4, column 0", 4, 1],
-		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", 1, 1],
-		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", 1, 1]
+		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", 1, 6],
+		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", 1, 6],
+		["undefined reference on a later line", "{\n  a: 1,\n  b: nope.c\n}", "Unresolved reference: nope.c (circular reference or undefined)", 3, 6]
 	])("reports a fatal parsing error for %s", (_label, code, message, line, column) => {
 		expect(lint(code)).toEqual([parsingError(message, line, column)]);
 	});
@@ -142,7 +142,7 @@ describe("Linter — rules on the jsonv language", () => {
 		rules: { "fixture/no-todo": "error" }
 	};
 
-	it("runs a rule and reports at the Program node's fallback location (line 1, column 0)", () => {
+	it("runs a rule and reports a Program-node problem across the whole document", () => {
 		expect(lint('{ a: "TODO" }', config)).toEqual([
 			{
 				ruleId: "fixture/no-todo",
@@ -150,9 +150,9 @@ describe("Linter — rules on the jsonv language", () => {
 				message: "Unexpected TODO marker.",
 				messageId: "todo",
 				line: 1,
-				column: 0,
+				column: 1,
 				endLine: 1,
-				endColumn: 0,
+				endColumn: 14,
 				fix: { range: [6, 10], text: "DONE" }
 			}
 		]);
@@ -166,13 +166,170 @@ describe("Linter — rules on the jsonv language", () => {
 		});
 	});
 
-	it("does not honour eslint-disable comments (the language exposes no inline config)", () => {
-		expect(lint('// eslint-disable\n{ a: "TODO" }', config)).toHaveLength(1);
-		expect(lint('/* eslint-disable fixture/no-todo */\n{ a: "TODO" }', config)).toHaveLength(1);
-	});
 
 	it("runs a core JavaScript rule without reporting anything", () => {
 		expect(lint("{ a: 1 }", { ...base, rules: { "no-debugger": "error" } })).toEqual([]);
+	});
+});
+
+describe("Linter — node positions (issue #19)", () => {
+	const report = {
+		meta: { messages: { m: "{{type}}" } },
+		create: (context) => ({
+			Program(node) {
+				context.report({ node, messageId: "m", data: { type: node.type } });
+				context.report({ loc: { line: 3, column: 5 }, messageId: "m", data: { type: "explicit loc" } });
+			}
+		})
+	};
+	const config = { ...base, plugins: { ...base.plugins, l: { rules: { r: report } } }, rules: { "l/r": "error" } };
+
+	it("places a Program-node report at the document span and an explicit loc as given", () => {
+		expect(lint('{\n  a: 1,\n  b: "TODO"\n}', config).map(({ message, line, column, endLine, endColumn }) => [message, line, column, endLine, endColumn])).toEqual([
+			["Program", 1, 1, 4, 2],
+			["explicit loc", 3, 5, undefined, undefined]
+		]);
+	});
+});
+
+describe("Linter — selectors on the AST (issue #19)", () => {
+	/**
+	 * Lints with a rule that reports `getText()` of every node a selector matches.
+	 * @param {string} selector - esquery selector.
+	 * @param {string} code - Source text.
+	 * @returns {Array<[string, number, number]>} `[text, line, column]` per report.
+	 * @example
+	 * select("Literal", "[1]");
+	 */
+	function select(selector, code) {
+		const rule = {
+			meta: { messages: { m: "{{text}}" } },
+			create: (context) => ({ [selector]: (node) => context.report({ node, messageId: "m", data: { text: context.sourceCode.getText(node) } }) })
+		};
+		const config = { ...base, plugins: { ...base.plugins, s: { rules: { r: rule } } }, rules: { "s/r": "error" } };
+		return lint(code, config).map(({ message, line, column }) => [message, line, column]);
+	}
+
+	const code = '{\n  name: "x",\n  list: [1, true, null],\n  nested: { deep: 2n },\n  ref: nested.deep,\n  t: `${name}!`\n}';
+
+	it.each([
+		["ObjectExpression", [["{ deep: 2n }", 4, 11]], "ObjectExpression ObjectExpression"],
+		["ArrayExpression", [["[1, true, null]", 3, 9]], "ArrayExpression"],
+		["Property keys", [["name", 2, 3], ["list", 3, 3], ["nested", 4, 3], ["deep", 4, 13], ["ref", 5, 3], ["t", 6, 3]], "Property > .key"],
+		["array elements", [["1", 3, 10], ["true", 3, 13], ["null", 3, 19]], "ArrayExpression > Literal"],
+		["a string literal by value", [['"x"', 2, 9]], 'Literal[value="x"]'],
+		["a BigInt literal", [["2n", 4, 19]], "Literal[bigint]"],
+		["a member reference", [["nested.deep", 5, 8]], "MemberExpression"],
+		["a template interpolation", [["name", 6, 9]], "TemplateLiteral > Identifier"],
+		["a property by key name", [['name: "x"', 2, 3]], "Property:has(> Identifier.key[name='name'])"]
+	])("selects %s", (_label, expected, selector) => {
+		expect(select(selector, code)).toEqual(expected);
+	});
+
+	it("fires :exit selectors for nested nodes", () => {
+		// ESLint sorts messages by position, so the outer array comes first.
+		expect(select("ArrayExpression:exit", "[[1]]")).toEqual([
+			["[[1]]", 1, 1],
+			["[1]", 1, 2]
+		]);
+	});
+});
+
+describe("Linter — inline configuration comments (issue #19)", () => {
+	const config = {
+		...base,
+		plugins: { ...base.plugins, fixture: fixturePlugin },
+		rules: { "fixture/no-todo-value": "error" }
+	};
+	const lines = (messages) => messages.map(({ ruleId, line, column }) => [ruleId, line, column]);
+
+	it.each([
+		["// eslint-disable", '// eslint-disable\n{ a: "TODO" }'],
+		["/* eslint-disable */", '/* eslint-disable */\n{ a: "TODO" }'],
+		["/* eslint-disable <rule> */", '/* eslint-disable fixture/no-todo-value */\n{ a: "TODO" }'],
+		["// eslint-disable-next-line", '{\n  // eslint-disable-next-line\n  a: "TODO"\n}'],
+		["// eslint-disable-next-line <rule>", '{\n  // eslint-disable-next-line fixture/no-todo-value\n  a: "TODO"\n}'],
+		["// eslint-disable-line", '{ a: "TODO" } // eslint-disable-line'],
+		["/* eslint-disable-line <rule> */", '{ a: "TODO" /* eslint-disable-line fixture/no-todo-value */ }']
+	])("%s suppresses the report", (_label, code) => {
+		expect(lint(code, config)).toEqual([]);
+	});
+
+	it("scopes directives to the right lines and rules", () => {
+		const code = [
+			"{",
+			'  a: "TODO", // eslint-disable-line fixture/no-todo',
+			"  // eslint-disable-next-line fixture/no-todo-value",
+			'  b: "TODO",',
+			"  /* eslint-disable */",
+			'  c: "TODO",',
+			"  /* eslint-enable */",
+			'  d: "TODO"',
+			"}"
+		].join("\n");
+		// Line 2's directive names a different rule, so the report stays and ESLint flags the
+		// directive itself as unused (ESLint's default unused-directive reporting).
+		const messages = lint(code, config);
+		expect(lines(messages)).toEqual([
+			["fixture/no-todo-value", 2, 6],
+			[null, 2, 14],
+			["fixture/no-todo-value", 8, 6]
+		]);
+		expect(messages[1].message).toBe("Unused eslint-disable directive (no problems were reported from 'fixture/no-todo').");
+	});
+
+	it("applies /* eslint <rule>: <severity> */ config comments", () => {
+		expect(lint('/* eslint fixture/no-todo-value: "off" */\n{ a: "TODO" }', config)).toEqual([]);
+		const [message] = lint('/* eslint fixture/no-todo-value: "warn" */\n{ a: "TODO" }', config);
+		expect(message).toMatchObject({ ruleId: "fixture/no-todo-value", severity: 1, line: 2, column: 6 });
+		const [enabled] = lint('/* eslint fixture/no-todo: "error" */\n{ a: "TODO" }', { ...base, plugins: { ...base.plugins, fixture: fixturePlugin } });
+		expect(enabled).toMatchObject({ ruleId: "fixture/no-todo", severity: 2 });
+	});
+
+	it("reports a malformed config comment and a multi-line eslint-disable-line as problems", () => {
+		const [malformed] = lint('/* eslint fixture/no-todo-value: [ */\n{ a: 1 }', config);
+		expect(malformed).toMatchObject({ ruleId: null, fatal: true, line: 1, column: 1, endLine: 1, endColumn: 38 });
+		expect(malformed.message).toMatch(/^Failed to parse JSON from/);
+
+		expect(lint('{ a: "TODO" } /* eslint-disable-line\n */', config)).toEqual([
+			expect.objectContaining({ ruleId: "fixture/no-todo-value", line: 1, column: 6 }),
+			expect.objectContaining({
+				ruleId: null,
+				message: "eslint-disable-line comment should not span multiple lines.",
+				line: 1,
+				column: 15,
+				endLine: 2,
+				endColumn: 4
+			})
+		]);
+	});
+
+	it("reports unused disable directives at the comment's position", () => {
+		const messages = linter.verify("{ a: 1 }\n// eslint-disable-next-line fixture/no-todo-value\n", config, {
+			filename: "file.jsonv",
+			reportUnusedDisableDirectives: "error"
+		});
+		expect(messages).toEqual([
+			expect.objectContaining({
+				ruleId: null,
+				message: "Unused eslint-disable directive (no problems were reported from 'fixture/no-todo-value').",
+				line: 2,
+				column: 1
+			})
+		]);
+	});
+
+	it("ignores inline config when allowInlineConfig is false", () => {
+		const messages = linter.verify('// eslint-disable\n{ a: "TODO" }', config, { filename: "file.jsonv", allowInlineConfig: false });
+		expect(lines(messages)).toEqual([["fixture/no-todo-value", 2, 6]]);
+	});
+
+	it("warns about inline config when noInlineConfig is set", () => {
+		const messages = linter.verify('// eslint-disable\n{ a: "TODO" }', { ...config, linterOptions: { noInlineConfig: true } }, "file.jsonv");
+		expect(messages).toEqual([
+			expect.objectContaining({ ruleId: null, severity: 1, message: expect.stringContaining("'// eslint-disable' has no effect"), line: 1, column: 1 }),
+			expect.objectContaining({ ruleId: "fixture/no-todo-value", line: 2, column: 6 })
+		]);
 	});
 });
 
