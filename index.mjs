@@ -12,7 +12,8 @@
  * - Reports parse errors with accurate source locations
  * - Supports all ES2011-2025 features (JSON5, binary/octal literals, BigInt, numeric separators, etc.)
  * - Detects internal reference errors (circular refs, undefined refs)
- * - Configurable year-based feature detection
+ * - Configurable language options: target ES year, parse mode, strict BigInt and octal checks,
+ *   and internal reference resolution
  * - Exposes a positioned AST (objects, arrays, properties, literals, references, templates),
  *   comments and tokens, so rules can select nodes and inline `eslint-disable` comments work
  *
@@ -61,14 +62,28 @@ import { fileURLToPath } from "node:url";
  */
 
 /**
- * Language options for `language: "jsonv/jsonv"`. Any other key is rejected by
- * `validateLanguageOptions`, so the type is closed.
+ * The parse modes the `mode` language option accepts, matching @cldmv/jsonv's `ParseOptions["mode"]`:
+ * `"jsonv"` (every jsonv feature of the selected year), `"json5"` (JSON5 only) or `"json"` (strict JSON).
+ *
+ * @public
+ * @typedef {"jsonv" | "json5" | "json"} JsonvMode
+ */
+
+/**
+ * Language options for `language: "jsonv/jsonv"`. Each one is forwarded to @cldmv/jsonv's
+ * `parseWithOptions()` and `parseToAst()`. Any other key is rejected by `validateLanguageOptions`,
+ * so the type is closed.
  *
  * @public
  * @typedef {object} JsonvLanguageOptions
  * @property {JsonvYear} [year] The ES year whose jsonv features are allowed. Defaults to `2025`.
+ * @property {JsonvMode} [mode] The parse mode. Defaults to `"jsonv"`.
  * @property {boolean} [strictBigInt] When `true`, an integer outside the safe range without an `n` suffix is an error instead of
  *   being converted to a BigInt. Defaults to `false`.
+ * @property {boolean} [strictOctal] When `true`, a legacy octal literal such as `0755` is an error (`0o755` is still allowed).
+ *   Defaults to `false`.
+ * @property {boolean} [allowInternalReferences] When `false`, internal references are left unresolved, so an undefined or
+ *   circular reference is no longer reported. Defaults to `true`.
  */
 
 /**
@@ -295,14 +310,43 @@ function readPackageMeta() {
 }
 
 /**
- * Language options `jsonvLanguage#parse` reads from `context.languageOptions` and
- * forwards to `@cldmv/jsonv`'s `parseWithOptions`. Any other key is rejected by
- * `validateLanguageOptions` since it would silently do nothing.
+ * The default of every language option `jsonvLanguage#parse` reads from `context.languageOptions`
+ * and forwards to @cldmv/jsonv's `parseWithOptions()` and `parseToAst()`. The defaults are
+ * @cldmv/jsonv's own (`ParseOptions` in its `src/api-types.mts`), except `year`, which jsonv
+ * derives from the current date and the plugin pins to the latest supported year.
+ *
+ * @public
+ * @type {Readonly<Required<JsonvLanguageOptions>>}
+ */
+const DEFAULT_LANGUAGE_OPTIONS = Object.freeze({
+	year: 2025,
+	mode: "jsonv",
+	strictBigInt: false,
+	strictOctal: false,
+	allowInternalReferences: true
+});
+
+/**
+ * The language options the plugin accepts: exactly the keys of {@link DEFAULT_LANGUAGE_OPTIONS}.
+ * Any other key is rejected by `validateLanguageOptions`, since it would silently do nothing.
  *
  * @public
  * @type {Set<string>}
  */
-const SUPPORTED_LANGUAGE_OPTIONS = new Set(["year", "strictBigInt"]);
+const SUPPORTED_LANGUAGE_OPTIONS = new Set(Object.keys(DEFAULT_LANGUAGE_OPTIONS));
+
+/**
+ * @cldmv/jsonv parse options the plugin deliberately does not accept, each with the reason
+ * `validateLanguageOptions` gives when a config sets it.
+ *
+ * @public
+ * @type {Readonly<Record<string, string>>}
+ */
+const UNSUPPORTED_JSONV_OPTIONS = Object.freeze({
+	reviver: "a reviver only transforms the evaluated value, which linting does not use",
+	preserveComments: "the AST always carries the comments",
+	tolerant: "the plugin controls how parse errors are collected"
+});
 
 /**
  * Valid `year` language option values, matching @cldmv/jsonv's `ParseOptions["year"]`
@@ -312,6 +356,22 @@ const SUPPORTED_LANGUAGE_OPTIONS = new Set(["year", "strictBigInt"]);
  * @type {Set<number>}
  */
 const VALID_YEARS = new Set([2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]);
+
+/**
+ * Valid `mode` language option values, matching @cldmv/jsonv's `ParseOptions["mode"]` union.
+ *
+ * @public
+ * @type {Set<string>}
+ */
+const VALID_MODES = new Set(["jsonv", "json5", "json"]);
+
+/**
+ * The language options that take a boolean.
+ *
+ * @public
+ * @type {ReadonlyArray<"strictBigInt" | "strictOctal" | "allowInternalReferences">}
+ */
+const BOOLEAN_LANGUAGE_OPTIONS = Object.freeze(["strictBigInt", "strictOctal", "allowInternalReferences"]);
 
 /**
  * Child keys of every node type in the AST `jsonvLanguage#parse` produces, in source order
@@ -687,9 +747,11 @@ const jsonvLanguage = {
 	 * Parse jsonv source code - ESLint Language API.
 	 *
 	 * The file is first parsed and evaluated with `parseWithOptions` — that is what reports
-	 * syntax errors, year-gated features, `strictBigInt` violations and unresolved/circular
-	 * internal references, each with its source position. A file that passes is then parsed
-	 * with `parseToAst` to build the positioned AST, comments and tokens ESLint traverses.
+	 * syntax errors, year-gated features, `mode`, `strictBigInt` and `strictOctal` violations
+	 * and unresolved/circular internal references (unless `allowInternalReferences` is `false`),
+	 * each with its source position. A file that passes is then parsed with `parseToAst` to
+	 * build the positioned AST, comments and tokens ESLint traverses. Both calls receive every
+	 * language option, with the defaults filled in.
 	 *
 	 * @param {File} file - File object with body property containing source text
 	 * @param {{languageOptions: JsonvLanguageOptions}} context - Context with languageOptions
@@ -701,9 +763,12 @@ const jsonvLanguage = {
 		/** @type {JsonvLanguageOptions} */
 		const options = context.languageOptions || {};
 		const parseOptions = {
-			year: options.year || 2025,
-			strictBigInt: options.strictBigInt !== undefined ? options.strictBigInt : false,
-			mode: /** @type {const} */ ("jsonv")
+			// `||`, not `??`: a falsy year (e.g. `0` from a direct `parse()` call) has always meant the default.
+			year: options.year || DEFAULT_LANGUAGE_OPTIONS.year,
+			mode: options.mode ?? DEFAULT_LANGUAGE_OPTIONS.mode,
+			strictBigInt: options.strictBigInt ?? DEFAULT_LANGUAGE_OPTIONS.strictBigInt,
+			strictOctal: options.strictOctal ?? DEFAULT_LANGUAGE_OPTIONS.strictOctal,
+			allowInternalReferences: options.allowInternalReferences ?? DEFAULT_LANGUAGE_OPTIONS.allowInternalReferences
 		};
 
 		try {
@@ -768,9 +833,14 @@ const jsonvLanguage = {
 	validateLanguageOptions(languageOptions) {
 		const options = languageOptions ?? {};
 
+		const supported = `Supported options are: ${[...SUPPORTED_LANGUAGE_OPTIONS].join(", ")}.`;
+
 		for (const key of Object.keys(options)) {
+			if (Object.hasOwn(UNSUPPORTED_JSONV_OPTIONS, key)) {
+				throw new TypeError(`Language option "${key}" is not supported: ${UNSUPPORTED_JSONV_OPTIONS[key]}. ${supported}`);
+			}
 			if (!SUPPORTED_LANGUAGE_OPTIONS.has(key)) {
-				throw new TypeError(`Unknown language option "${key}". Supported options are: ${[...SUPPORTED_LANGUAGE_OPTIONS].join(", ")}.`);
+				throw new TypeError(`Unknown language option "${key}". ${supported}`);
 			}
 		}
 
@@ -780,8 +850,16 @@ const jsonvLanguage = {
 			);
 		}
 
-		if (options.strictBigInt !== undefined && typeof options.strictBigInt !== "boolean") {
-			throw new TypeError(`Invalid "strictBigInt" language option: expected a boolean, got ${typeof options.strictBigInt}.`);
+		if (options.mode !== undefined && !VALID_MODES.has(options.mode)) {
+			throw new TypeError(
+				`Invalid "mode" language option: ${JSON.stringify(options.mode)}. Supported modes are: ${[...VALID_MODES].join(", ")}.`
+			);
+		}
+
+		for (const key of BOOLEAN_LANGUAGE_OPTIONS) {
+			if (options[key] !== undefined && typeof options[key] !== "boolean") {
+				throw new TypeError(`Invalid "${key}" language option: expected a boolean, got ${typeof options[key]}.`);
+			}
 		}
 	},
 
@@ -794,10 +872,7 @@ const jsonvLanguage = {
 	 * @public
 	 * @type {JsonvLanguageOptions}
 	 */
-	defaultLanguageOptions: {
-		year: 2025,
-		strictBigInt: false
-	}
+	defaultLanguageOptions: { ...DEFAULT_LANGUAGE_OPTIONS }
 };
 
 /**

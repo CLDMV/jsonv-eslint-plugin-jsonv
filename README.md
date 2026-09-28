@@ -29,7 +29,7 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 - **Internal References**: Validates bare identifiers, template interpolation, nested property access
 - **BigInt Support**: Validates BigInt literals and numeric separators
 - **Accurate Error Reporting**: Parse errors include line/column information
-- **Year-Based Features**: Configurable target ES year for feature detection
+- **Configurable Parsing**: Target ES year, parse mode, strict BigInt and octal checks, and internal reference resolution
 
 ## Installation
 
@@ -76,7 +76,7 @@ export default [
 
 ### Configuration Options
 
-The parser supports the following options:
+`languageOptions` are passed to the `@cldmv/jsonv` parser (both `parseWithOptions()`, which reports errors, and `parseToAst()`, which builds the AST rules see). Every option is optional; the values below are the defaults:
 
 ```javascript
 {
@@ -84,12 +84,30 @@ The parser supports the following options:
   plugins: { jsonv },
   language: "jsonv/jsonv",
   languageOptions: {
-    year: 2025,           // Target ES year (2011, 2015, 2020, 2021, 2022-2025)
-    strictBigInt: false,  // Require 'n' suffix for large integers
-    mode: "jsonv"         // Parse mode: "jsonv", "json5", "json"
+    year: 2025,                    // Target ES year: which jsonv features are allowed
+    mode: "jsonv",                 // Parse mode: "jsonv", "json5" or "json"
+    strictBigInt: false,           // true: an unsafe integer needs the `n` suffix
+    strictOctal: false,            // true: legacy `0755` octals are errors (use `0o755`)
+    allowInternalReferences: true  // false: references are not resolved or checked
   }
 }
 ```
+
+| Option | Type | Allowed values | Default | Meaning |
+|---|---|---|---|---|
+| `year` | number | `2011`, `2015`, `2016`, `2017`, `2018`, `2019`, `2020`, `2021`, `2022`, `2023`, `2024`, `2025` | `2025` | The target ES year. A feature introduced after it is an error: binary/octal literals and template literals need 2015, BigInt needs 2020, numeric separators need 2021. |
+| `mode` | string | `"jsonv"`, `"json5"`, `"json"` | `"jsonv"` | The parse mode. `"jsonv"` allows every jsonv feature of the selected year, `"json5"` is meant for JSON5 only and `"json"` for strict JSON. The plugin passes the mode through unchanged, so it enforces exactly what `@cldmv/jsonv` enforces: in `@cldmv/jsonv` 1.1.0, `"json"` rejects comments, and the other JSON and JSON5 restrictions are not enforced yet. |
+| `strictBigInt` | boolean | `true`, `false` | `false` | When `true`, an integer outside the safe range (±9007199254740991) without an `n` suffix is an error. When `false`, it is read as a BigInt. |
+| `strictOctal` | boolean | `true`, `false` | `false` | When `true`, a legacy octal literal such as `0755` is an error; `0o755` is still allowed. |
+| `allowInternalReferences` | boolean | `true`, `false` | `true` | When `true`, internal references (`backup: port`, `server.port`, `` `${host}` ``) are resolved, and an undefined or circular reference is an error. When `false`, they are left unresolved and are not reported. |
+
+Any other key, or a value outside the allowed ones, is a configuration error (a `TypeError` naming the option).
+
+Three `@cldmv/jsonv` parse options are deliberately not accepted:
+
+- `reviver`: a reviver only transforms the evaluated value, and linting does not use that value.
+- `preserveComments`: the AST always carries the comments, so inline `eslint-disable` comments and rules can see them.
+- `tolerant`: the plugin controls how parse errors are collected.
 
 ### Inline Configuration
 
