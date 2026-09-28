@@ -107,8 +107,27 @@ describe("Linter — languageOptions", () => {
 		expect(lint("{ a: 99999999999999999999 }", { ...base, languageOptions: { strictBigInt: false } })).toEqual([]);
 	});
 
-	it("accepts unknown language options without a config error", () => {
-		expect(lint("{ a: 1 }", { ...base, languageOptions: { unknown: true } })).toEqual([]);
+	it("rejects unknown language options with a config error", () => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { unknown: true } })).toThrow(
+			/Key "languageOptions": Unknown language option "unknown"/
+		);
+	});
+
+	it("rejects an unsupported year value with a config error", () => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { year: 1999 } })).toThrow(
+			/Key "languageOptions": Invalid "year" language option/
+		);
+	});
+
+	it("rejects a non-boolean strictBigInt value with a config error", () => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { strictBigInt: "yes" } })).toThrow(
+			/Key "languageOptions": Invalid "strictBigInt" language option/
+		);
+	});
+
+	it("uses defaultLanguageOptions (year 2025, strictBigInt false) when a config specifies neither", () => {
+		expect(lint("{ a: 1_000n }", base)).toEqual([]);
+		expect(lint("{ a: 99999999999999999999 }", base)).toEqual([]);
 	});
 });
 
@@ -166,12 +185,11 @@ describe("defineConfig extends", () => {
 		{ files: ["**/*.jsonv"], plugins: { jsonv: plugin }, language: "jsonv/jsonv", extends: ["jsonv/recommended"] }
 	]);
 
-	it("expands the string reference jsonv/recommended into a files-scoped block ahead of the user block", () => {
+	it("expands the string reference jsonv/recommended into a files-scoped block ahead of the user block, with no languageOptions.parser", () => {
 		expect(config).toHaveLength(2);
 		expect(config[0]).toEqual({
 			name: "UserConfig[0][0] > jsonv/recommended",
 			files: ["**/*.jsonv"],
-			languageOptions: { parser: plugin.languages.jsonv },
 			rules: {}
 		});
 		expect(config[1]).toEqual({ files: ["**/*.jsonv"], plugins: { jsonv: plugin }, language: "jsonv/jsonv" });
