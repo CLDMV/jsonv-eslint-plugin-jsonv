@@ -20,7 +20,12 @@
 		"test:watch": "vitest --config .configs/vitest.config.mjs",
 		"test:types": "npm run build:types && tsc -p tests/types/tsconfig.json",
 		"coverage": "node tests/run-vitest.mjs --coverage-quiet",
-		"ci:coverage": "npm run coverage"
+		"ci:coverage": "npm run coverage",
+		"lint": "eslint --config .configs/eslint.config.mjs .",
+		"lint:fix": "eslint --config .configs/eslint.config.mjs . --fix",
+		"format": "prettier --config .configs/.prettierrc --write .",
+		"format:check": "prettier --config .configs/.prettierrc --check .",
+		"prepare": "node -e \"import('./.githooks/install.mjs').catch(()=>{})\""
 	},
 	"publishConfig": {
 		"access": "public"
@@ -34,10 +39,17 @@
 	},
 	"devDependencies": {
 		"@cldmv/jsonv": "^1.1.0",
+		"@cldmv/prettier-plugin-jsonv": "^1.0.6",
 		"@cldmv/vitest-runner": "^1.4.3",
+		"@eslint/css": "^2.0.0",
+		"@eslint/js": "^10.0.1",
+		"@eslint/json": "^2.1.0",
+		"@eslint/markdown": "^8.0.3",
 		"@types/node": "^26.6.3",
 		"@vitest/coverage-v8": "^5.0.2",
 		"eslint": "^10.11.0",
+		"globals": "^17.12.0",
+		"prettier": "^3.9.9",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.2"
 	},
