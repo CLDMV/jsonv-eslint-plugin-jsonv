@@ -37,6 +37,8 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 npm install --save-dev @cldmv/eslint-plugin-jsonv
 ```
 
+**Requirements:** Node `^20.19.0 || ^22.13.0 || >=24` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
+
 **Note:** This plugin requires `@cldmv/jsonv` as a peer dependency.
 
 ```bash
