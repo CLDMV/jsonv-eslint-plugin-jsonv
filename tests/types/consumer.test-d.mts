@@ -11,6 +11,7 @@ import type {
 	JsonvLanguage,
 	JsonvLanguageOptions,
 	JsonvLiteral,
+	JsonvMode,
 	JsonvNode,
 	JsonvObjectExpression,
 	JsonvParseResult,
@@ -48,6 +49,12 @@ export default defineConfig([
 		extends: ["jsonv/recommended"]
 	},
 	{
+		files: ["strict/**/*.jsonv"],
+		plugins: { jsonv },
+		language: "jsonv/jsonv",
+		languageOptions: { mode: "json", strictOctal: true, allowInternalReferences: false } satisfies JsonvLanguageOptions
+	},
+	{
 		files: ["legacy/**/*.jsonv"],
 		plugins: { jsonv },
 		language: "jsonv/jsonv",
@@ -58,12 +65,23 @@ export default defineConfig([
 
 // Language options are closed and typed.
 const defaults: JsonvLanguageOptions = {};
-const full: JsonvLanguageOptions = { year: 2025, strictBigInt: false };
+const full: JsonvLanguageOptions = { year: 2025, mode: "jsonv", strictBigInt: false, strictOctal: false, allowInternalReferences: true };
+const json5: JsonvLanguageOptions = { mode: "json5" };
+const modes: JsonvMode[] = ["jsonv", "json5", "json"];
+jsonv.languages.jsonv.defaultLanguageOptions satisfies JsonvLanguageOptions | undefined;
 // @ts-expect-error -- unknown option; validateLanguageOptions rejects it at runtime too.
 const unknownKey: JsonvLanguageOptions = { ecmaVersion: 2020 };
 // @ts-expect-error -- strictBigInt is a boolean.
 const badValue: JsonvLanguageOptions = { strictBigInt: "yes" };
-void [defaults, full, unknownKey, badValue];
+// @ts-expect-error -- "xml" is not a jsonv parse mode.
+const badMode: JsonvLanguageOptions = { mode: "xml" };
+// @ts-expect-error -- strictOctal is a boolean.
+const badOctal: JsonvLanguageOptions = { strictOctal: 1 };
+// @ts-expect-error -- allowInternalReferences is a boolean.
+const badReferences: JsonvLanguageOptions = { allowInternalReferences: "no" };
+// @ts-expect-error -- tolerant is not a plugin language option; the plugin controls error collection.
+const tolerant: JsonvLanguageOptions = { tolerant: true };
+void [defaults, full, json5, modes, unknownKey, badValue, badMode, badOctal, badReferences, tolerant];
 
 // The language is typed with @eslint/core's generics.
 declare const file: File;

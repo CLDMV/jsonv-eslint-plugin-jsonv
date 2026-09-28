@@ -48,16 +48,64 @@ describe("jsonv language definition", () => {
 	});
 
 	it("documents its default language options, in the shape ESLint's Language API reads (defaultLanguageOptions)", () => {
-		expect(language.defaultLanguageOptions).toEqual({ year: 2025, strictBigInt: false });
+		expect(language.defaultLanguageOptions).toEqual({
+			year: 2025,
+			mode: "jsonv",
+			strictBigInt: false,
+			strictOctal: false,
+			allowInternalReferences: true
+		});
 		expect(language.defaultParserOptions).toBeUndefined();
 	});
 
-	it("accepts no options, and accepts valid year/strictBigInt values, without throwing", () => {
+	it("accepts no options, and accepts valid values of every option, without throwing", () => {
 		expect(language.validateLanguageOptions({})).toBeUndefined();
 		expect(language.validateLanguageOptions(undefined)).toBeUndefined();
 		expect(language.validateLanguageOptions({ year: 2011, strictBigInt: true })).toBeUndefined();
 		expect(language.validateLanguageOptions({ year: 2025 })).toBeUndefined();
 		expect(language.validateLanguageOptions({ strictBigInt: false })).toBeUndefined();
+		for (const mode of ["jsonv", "json5", "json"]) expect(language.validateLanguageOptions({ mode })).toBeUndefined();
+		for (const value of [true, false]) {
+			expect(language.validateLanguageOptions({ strictOctal: value, allowInternalReferences: value })).toBeUndefined();
+		}
+		expect(language.validateLanguageOptions({ ...language.defaultLanguageOptions })).toBeUndefined();
+	});
+
+	it("names every supported option when it rejects an unknown key", () => {
+		expect(() => language.validateLanguageOptions({ ecmaVersion: 2020 })).toThrow(
+			'Unknown language option "ecmaVersion". Supported options are: year, mode, strictBigInt, strictOctal, allowInternalReferences.'
+		);
+	});
+
+	it("does not treat an inherited Object.prototype name as a supported or an explained option", () => {
+		expect(() => language.validateLanguageOptions({ constructor: true })).toThrow(/^Unknown language option "constructor"\./);
+	});
+
+	it.each([
+		["reviver", "a reviver only transforms the evaluated value, which linting does not use"],
+		["preserveComments", "the AST always carries the comments"],
+		["tolerant", "the plugin controls how parse errors are collected"]
+	])("rejects jsonv's %s option, and says why", (key, reason) => {
+		expect(() => language.validateLanguageOptions({ [key]: true })).toThrow(
+			`Language option "${key}" is not supported: ${reason}. Supported options are: year, mode, strictBigInt, strictOctal, allowInternalReferences.`
+		);
+	});
+
+	it.each([["xml"], ["JSON"], [""], [null], [1]])("rejects the mode value %j", (mode) => {
+		expect(() => language.validateLanguageOptions({ mode })).toThrow(
+			`Invalid "mode" language option: ${JSON.stringify(mode)}. Supported modes are: jsonv, json5, json.`
+		);
+	});
+
+	it.each([
+		["strictOctal", "true", "string"],
+		["strictOctal", 1, "number"],
+		["allowInternalReferences", "false", "string"],
+		["allowInternalReferences", null, "object"]
+	])("rejects a non-boolean %s value (%j)", (key, value, type) => {
+		expect(() => language.validateLanguageOptions({ [key]: value })).toThrow(
+			`Invalid "${key}" language option: expected a boolean, got ${type}.`
+		);
 	});
 
 	it("rejects an unknown language option key", () => {

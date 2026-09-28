@@ -133,6 +133,76 @@ describe("Linter — languageOptions", () => {
 		expect(lint("{ a: 1_000n }", base)).toEqual([]);
 		expect(lint("{ a: 99999999999999999999 }", base)).toEqual([]);
 	});
+
+	it('mode: "json" reports a line comment at its position', () => {
+		expect(lint('{\n  // note\n  "a": 1\n}', { ...base, languageOptions: { mode: "json" } })).toEqual([
+			parsingError("Comments not allowed in JSON mode", 2, 3)
+		]);
+	});
+
+	it('mode: "json" reports a block comment at its position', () => {
+		expect(lint('{ "a": 1 /* note */ }', { ...base, languageOptions: { mode: "json" } })).toEqual([
+			parsingError("Comments not allowed in JSON mode", 1, 10)
+		]);
+	});
+
+	it('mode: "json" accepts a strict JSON document', () => {
+		expect(lint('{ "a": 1, "b": [true, null, "x"] }', { ...base, languageOptions: { mode: "json" } })).toEqual([]);
+	});
+
+	it.each(["jsonv", "json5"])('mode: "%s" accepts comments', (mode) => {
+		expect(lint('{\n  // note\n  "a": 1\n}', { ...base, languageOptions: { mode } })).toEqual([]);
+	});
+
+	it("strictOctal: true rejects a legacy octal literal at its position", () => {
+		expect(lint("{ a: 0755 }", { ...base, languageOptions: { strictOctal: true } })).toEqual([
+			parsingError("Legacy octal literals require 0o prefix in strict mode", 1, 6)
+		]);
+	});
+
+	it("strictOctal: true still accepts a 0o octal literal", () => {
+		expect(lint("{ a: 0o755 }", { ...base, languageOptions: { strictOctal: true } })).toEqual([]);
+	});
+
+	it("strictOctal: false (and the default) accepts a legacy octal literal", () => {
+		expect(lint("{ a: 0755 }", { ...base, languageOptions: { strictOctal: false } })).toEqual([]);
+		expect(lint("{ a: 0755 }", base)).toEqual([]);
+	});
+
+	it.each([
+		["an undefined reference", "{ a: missing }"],
+		["a circular reference", "{ a: b, b: a }"],
+		["an undefined dotted reference", "{ a: nope.c }"],
+		["an undefined template interpolation", "{ a: `x${nope}` }"]
+	])("allowInternalReferences: false leaves %s unresolved instead of reporting it", (_label, code) => {
+		expect(lint(code, { ...base, languageOptions: { allowInternalReferences: false } })).toEqual([]);
+		expect(lint(code, { ...base, languageOptions: { allowInternalReferences: true } })).toHaveLength(1);
+		expect(lint(code, base)).toHaveLength(1);
+	});
+
+	it("allowInternalReferences: false still reports syntax errors", () => {
+		expect(lint("{ a: }", { ...base, languageOptions: { allowInternalReferences: false } })).toEqual([
+			parsingError("Unexpected token: RBRACE at line 1, column 5", 1, 6)
+		]);
+	});
+
+	it("rejects an unsupported mode value with a config error", () => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { mode: "xml" } })).toThrow(
+			/Key "languageOptions": Invalid "mode" language option: "xml"\. Supported modes are: jsonv, json5, json\./
+		);
+	});
+
+	it.each(["strictOctal", "allowInternalReferences"])("rejects a non-boolean %s value with a config error", (key) => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { [key]: "yes" } })).toThrow(
+			new RegExp(`Key "languageOptions": Invalid "${key}" language option: expected a boolean, got string\\.`)
+		);
+	});
+
+	it.each(["reviver", "preserveComments", "tolerant"])("rejects jsonv's %s option, which the plugin does not support", (key) => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { [key]: true } })).toThrow(
+			new RegExp(`Key "languageOptions": Language option "${key}" is not supported: `)
+		);
+	});
 });
 
 describe("Linter — rules on the jsonv language", () => {
