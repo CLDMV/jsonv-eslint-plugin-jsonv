@@ -75,6 +75,39 @@ The parser supports the following options:
 }
 ```
 
+### Inline Configuration
+
+The usual ESLint comments work inside `.jsonv` files: `// eslint-disable`, `/* eslint-disable <rule> */`, `/* eslint-enable */`, `// eslint-disable-line`, `// eslint-disable-next-line`, and `/* eslint <rule>: "off" */` rule configuration.
+
+### Writing Rules
+
+The `jsonv/jsonv` language exposes the document as an AST built from `@cldmv/jsonv`'s `parseToAst()`. Every node has a `loc` (1-based lines and columns) and a `range`, so reports on a node land on that node, and rules can use node types and selectors:
+
+| Node type | Children | Notes |
+|---|---|---|
+| `Program` | `body` | The document; `body` is the root value. `comments` and `tokens` hang off it. |
+| `ObjectExpression` | `properties` | `{ ... }` |
+| `Property` | `key`, `value` | `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key). |
+| `ArrayExpression` | `elements` | `[ ... ]` |
+| `Literal` | — | Strings, numbers, BigInt (`bigint` holds the digits), booleans, `null`, `Infinity`, `NaN`; `raw` is the source text. |
+| `Identifier` | — | An unquoted key, or an internal reference such as `backup: port`. |
+| `MemberExpression` | `object`, `property` | A dotted internal reference such as `server.port`. |
+| `TemplateLiteral` | `quasis`, `expressions` | A backtick string with `${...}` interpolation (a plain backtick string is a `Literal`). |
+| `TemplateElement` | — | A literal segment of a template. |
+
+```javascript
+// Report every string value containing "TODO", on the string itself
+create(context) {
+  return {
+    "Property > Literal.value"(node) {
+      if (typeof node.value === "string" && node.value.includes("TODO")) {
+        context.report({ node, message: "Unexpected TODO." });
+      }
+    }
+  };
+}
+```
+
 ## Supported Features
 
 ### ES2011 (JSON5 Base)

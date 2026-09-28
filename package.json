@@ -29,10 +29,10 @@
 		"README.md"
 	],
 	"peerDependencies": {
-		"@cldmv/jsonv": "^1.0.10"
+		"@cldmv/jsonv": "^1.1.0"
 	},
 	"devDependencies": {
-		"@cldmv/jsonv": "^1.0.10",
+		"@cldmv/jsonv": "^1.1.0",
 		"@cldmv/vitest-runner": "^1.4.3",
 		"@vitest/coverage-v8": "^5.0.2",
 		"eslint": "^10.11.0",
@@ -81,5 +81,8 @@
 	"homepage": "https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/#readme",
 	"engines": {
 		"node": ">=18.0.0"
+	},
+	"dependencies": {
+		"@eslint/plugin-kit": "^0.7.3"
 	}
 }
