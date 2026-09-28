@@ -264,8 +264,9 @@ jobs:
 
             # ── Type check (runs inside the coverage-badge job) ────────────────────
             type_check_command: ${{ github.event.inputs.type_check_command || 'npm run test:types' }}
-            # No `test:types` script in this repo (types are emitted by `build:types`, not checked), so the type-check step stays skipped.
-            skip_type_check: true
+            # `test:types` type-checks index.mjs's JSDoc while emitting dist/index.d.mts, then compiles the
+            # consumer test in tests/types/ against those built declarations. `build:ci` runs it too.
+            skip_type_check: false
 
             # ── PR coverage badge ─────────────────────────────────────────────────
             # Injects a Shields.io badge + breakdown table directly into the PR body
