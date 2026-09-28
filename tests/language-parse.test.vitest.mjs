@@ -112,8 +112,18 @@ describe("parse() — malformed input", () => {
 			"Expected ',' or ']' in array at line 4, column 0",
 			{ line: 4, column: 1, endLine: 4, endColumn: 2 }
 		],
-		["computed key", "{ [k]: 1 }", "Expected property key, got LBRACKET at line 1, column 2", { line: 1, column: 3, endLine: 1, endColumn: 4 }],
-		["function value (lexer error)", "{ a: function() {} }", "Unexpected character: '('", { line: 1, column: 14, endLine: 1, endColumn: 14 }],
+		[
+			"computed key",
+			"{ [k]: 1 }",
+			"Expected property key, got LBRACKET at line 1, column 2",
+			{ line: 1, column: 3, endLine: 1, endColumn: 4 }
+		],
+		[
+			"function value (lexer error)",
+			"{ a: function() {} }",
+			"Unexpected character: '('",
+			{ line: 1, column: 14, endLine: 1, endColumn: 14 }
+		],
 		["unterminated string (lexer error)", '{ a: "unterminated }', "Unterminated string", { line: 1, column: 21, endLine: 1, endColumn: 21 }]
 	])("reports %s at its real source position", (_label, body, message, position) => {
 		const result = run(body);
@@ -138,8 +148,18 @@ describe("parse() — malformed input", () => {
 	// @cldmv/jsonv 1.1.0 throws a `JsonvReferenceError` for unresolved and circular internal
 	// references, positioned on the offending reference node (0-based column, like syntax errors).
 	it.each([
-		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", { line: 1, column: 6, endLine: 1, endColumn: 13 }],
-		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", { line: 1, column: 6, endLine: 1, endColumn: 7 }],
+		[
+			"undefined reference",
+			"{ a: missing }",
+			"Unresolved reference: missing (circular reference or undefined)",
+			{ line: 1, column: 6, endLine: 1, endColumn: 13 }
+		],
+		[
+			"circular reference",
+			"{ a: b, b: a }",
+			"Unresolved reference: b (circular reference or undefined)",
+			{ line: 1, column: 6, endLine: 1, endColumn: 7 }
+		],
 		[
 			"unresolved template interpolation",
 			"{\n  x: `${nope}`\n}",

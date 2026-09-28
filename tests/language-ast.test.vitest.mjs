@@ -116,7 +116,26 @@ describe("parse() — AST shape", () => {
 			'"d"',
 			"`t`"
 		]);
-		expect(elements.map((node) => node.value)).toEqual([1, -2, 3, 0.5, 255, 1, 7, 1000, 7n, true, false, null, Infinity, -Infinity, NaN, "s", "d", "t"]);
+		expect(elements.map((node) => node.value)).toEqual([
+			1,
+			-2,
+			3,
+			0.5,
+			255,
+			1,
+			7,
+			1000,
+			7n,
+			true,
+			false,
+			null,
+			Infinity,
+			-Infinity,
+			NaN,
+			"s",
+			"d",
+			"t"
+		]);
 		expect(elements[8].bigint).toBe("7");
 	});
 

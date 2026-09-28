@@ -53,6 +53,7 @@ npm run build
 ```
 
 This will:
+
 1. Copy `index.mjs` into `dist/index.mjs`
 2. Generate type definitions into `dist/index.d.mts`
 3. Prepare the plugin for use
@@ -62,15 +63,15 @@ This will:
 ### ESLint Flat Config (eslint.config.mjs)
 
 ```javascript
-import jsonv from '@cldmv/eslint-plugin-jsonv';
+import jsonv from "@cldmv/eslint-plugin-jsonv";
 
 export default [
-  {
-    files: ["**/*.jsonv"],
-    plugins: { jsonv },
-    language: "jsonv/jsonv",
-    extends: ["jsonv/recommended"]
-  }
+	{
+		files: ["**/*.jsonv"],
+		plugins: { jsonv },
+		language: "jsonv/jsonv",
+		extends: ["jsonv/recommended"]
+	}
 ];
 ```
 
@@ -99,17 +100,17 @@ The usual ESLint comments work inside `.jsonv` files: `// eslint-disable`, `/* e
 
 The `jsonv/jsonv` language exposes the document as an AST built from `@cldmv/jsonv`'s `parseToAst()`. Every node has a `loc` (1-based lines and columns) and a `range`, so reports on a node land on that node, and rules can use node types and selectors:
 
-| Node type | Children | Notes |
-|---|---|---|
-| `Program` | `body` | The document; `body` is the root value. `comments` and `tokens` hang off it. |
-| `ObjectExpression` | `properties` | `{ ... }` |
-| `Property` | `key`, `value` | `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key). |
-| `ArrayExpression` | `elements` | `[ ... ]` |
-| `Literal` | — | Strings, numbers, BigInt (`bigint` holds the digits), booleans, `null`, `Infinity`, `NaN`; `raw` is the source text. |
-| `Identifier` | — | An unquoted key, or an internal reference such as `backup: port`. |
-| `MemberExpression` | `object`, `property` | A dotted internal reference such as `server.port`. |
-| `TemplateLiteral` | `quasis`, `expressions` | A backtick string with `${...}` interpolation (a plain backtick string is a `Literal`). |
-| `TemplateElement` | — | A literal segment of a template. |
+| Node type          | Children                | Notes                                                                                                                |
+| ------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `Program`          | `body`                  | The document; `body` is the root value. `comments` and `tokens` hang off it.                                         |
+| `ObjectExpression` | `properties`            | `{ ... }`                                                                                                            |
+| `Property`         | `key`, `value`          | `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key).                                      |
+| `ArrayExpression`  | `elements`              | `[ ... ]`                                                                                                            |
+| `Literal`          | —                       | Strings, numbers, BigInt (`bigint` holds the digits), booleans, `null`, `Infinity`, `NaN`; `raw` is the source text. |
+| `Identifier`       | —                       | An unquoted key, or an internal reference such as `backup: port`.                                                    |
+| `MemberExpression` | `object`, `property`    | A dotted internal reference such as `server.port`.                                                                   |
+| `TemplateLiteral`  | `quasis`, `expressions` | A backtick string with `${...}` interpolation (a plain backtick string is a `Literal`).                              |
+| `TemplateElement`  | —                       | A literal segment of a template.                                                                                     |
 
 ```javascript
 // Report every string value containing "TODO", on the string itself
@@ -127,6 +128,7 @@ create(context) {
 ## Supported Features
 
 ### ES2011 (JSON5 Base)
+
 - Single-line (`//`) and multi-line (`/* */`) comments
 - Trailing commas in objects and arrays
 - Unquoted object keys
@@ -139,21 +141,27 @@ create(context) {
 - **Internal references via bare identifiers**: `{ port: 8080, backup: port }`
 
 ### ES2015 (ES6)
+
 - Binary literals (`0b1010`)
 - Octal literals (`0o755`, also legacy `0755`)
 - Template literals (backtick strings)
 - **Template interpolation for internal refs**: `` url: `http://${host}:${port}` ``
 
 ### ES2020
+
 - BigInt literals (`9007199254740992n`)
 - BigInt in hex/binary/octal formats
 
 ### ES2021
+
 - Numeric separators (`1_000_000`, `0xFF_AA`, `0b1111_0000`)
 
 ## Example
 
 **config.jsonv:**
+
+<!-- @cldmv/prettier-plugin-jsonv 1.0.6 rewrites this block destructively (keys become "[object Object]", comments and numeric formats are lost), so prettier leaves it verbatim. -->
+<!-- prettier-ignore -->
 ```jsonv
 {
   // Server configuration with internal references
