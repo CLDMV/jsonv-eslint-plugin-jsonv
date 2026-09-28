@@ -29,7 +29,53 @@
  */
 
 // Use proper package import - package is copied to node_modules during build
-import { parseWithOptions } from "@cldmv/jsonv/parser";
+import { JsonvSyntaxError, parseWithOptions } from "@cldmv/jsonv/parser";
+
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+/**
+ * Reads this package's own `name` and `version` from its `package.json`.
+ *
+ * `scripts/build.mjs` copies this file verbatim into `dist/index.mjs` — one directory
+ * deeper than the source file — so `package.json` sits alongside the source copy but
+ * one level up from the built copy. Check the co-located path first and fall back to
+ * the parent directory so this resolves correctly from either location.
+ *
+ * @public
+ * @returns {{name: string, version: string}} The package's `name` and `version`.
+ * @example
+ * const { name, version } = readPackageMeta();
+ */
+function readPackageMeta() {
+	const here = dirname(fileURLToPath(import.meta.url));
+	const localPath = join(here, "package.json");
+	const pkgPath = existsSync(localPath) ? localPath : join(here, "..", "package.json");
+	const require = createRequire(import.meta.url);
+	const { name, version } = require(pkgPath);
+	return { name, version };
+}
+
+/**
+ * Language options `jsonvLanguage#parse` reads from `context.languageOptions` and
+ * forwards to `@cldmv/jsonv`'s `parseWithOptions`. Any other key is rejected by
+ * `validateLanguageOptions` since it would silently do nothing.
+ *
+ * @public
+ * @type {Set<string>}
+ */
+const SUPPORTED_LANGUAGE_OPTIONS = new Set(["year", "strictBigInt"]);
+
+/**
+ * Valid `year` language option values, matching @cldmv/jsonv's `ParseOptions["year"]`
+ * union (see `@cldmv/jsonv/parser`'s `ParseOptions` type).
+ *
+ * @public
+ * @type {Set<number>}
+ */
+const VALID_YEARS = new Set([2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]);
 
 /**
  * Language definition for jsonv files
@@ -81,16 +127,24 @@ const jsonvLanguage = {
 				jsonvValue: result
 			};
 		} catch (error) {
+			// @cldmv/jsonv (>=1.0.10) throws a `JsonvSyntaxError` — or its `LexerError` subclass, which
+			// extends it — for every parser-level and lexer-level failure, carrying the real
+			// `line`/`column`/`loc` of the failure. Its `column` is 0-based (matching the column
+			// embedded in its own messages), while this language's `columnStart: 1` means ESLint
+			// expects 1-based columns, so the reported column is `error.column + 1`.
+			//
+			// Unresolved-reference errors (jsonv#32, in progress) are still a plain `Error` with no
+			// position — fall back to line 1, column 1 for anything that isn't a `JsonvSyntaxError`.
+			const hasPosition = error instanceof JsonvSyntaxError;
+
+			const errorInfo = hasPosition
+				? { message: error.message, line: error.line, column: error.column + 1, endLine: error.loc.end.line, endColumn: error.loc.end.column + 1 }
+				: { message: error.message, line: 1, column: 1 };
+
 			// Return error result
 			return {
 				ok: false,
-				errors: [
-					{
-						message: error.message,
-						line: error.line || 1,
-						column: error.column || 1
-					}
-				]
+				errors: [errorInfo]
 			};
 		}
 	},
@@ -161,52 +215,61 @@ const jsonvLanguage = {
 
 	/**
 	 * Validate language options
-	 * Required by ESLint 9 language API
+	 * Required by ESLint 9 language API. ESLint calls this with the languageOptions
+	 * already merged with `defaultLanguageOptions` below, so `languageOptions` here
+	 * reflects the effective options that will reach `parse()`.
 	 *
 	 * @public
-	 * @param {Object} languageOptions - The language options to validate
+	 * @param {Object} languageOptions - The (already-merged) language options to validate
 	 * @returns {void}
+	 * @throws {TypeError} When an unsupported key is present, or a supported key holds an invalid value
 	 */
-	validateLanguageOptions(___languageOptions) {
-		// No validation needed - all options are optional
-		// year, strictBigInt, mode, preserveComments, tolerant
+	validateLanguageOptions(languageOptions) {
+		const options = languageOptions ?? {};
+
+		for (const key of Object.keys(options)) {
+			if (!SUPPORTED_LANGUAGE_OPTIONS.has(key)) {
+				throw new TypeError(`Unknown language option "${key}". Supported options are: ${[...SUPPORTED_LANGUAGE_OPTIONS].join(", ")}.`);
+			}
+		}
+
+		if (options.year !== undefined && !VALID_YEARS.has(options.year)) {
+			throw new TypeError(
+				`Invalid "year" language option: ${JSON.stringify(options.year)}. Supported years are: ${[...VALID_YEARS].join(", ")}.`
+			);
+		}
+
+		if (options.strictBigInt !== undefined && typeof options.strictBigInt !== "boolean") {
+			throw new TypeError(`Invalid "strictBigInt" language option: expected a boolean, got ${typeof options.strictBigInt}.`);
+		}
 	},
 
 	/**
-	 * Validate language options
-	 * Required by ESLint 9 language API
-	 *
-	 * @public
-	 * @param {Object} languageOptions - The language options to validate
-	 * @returns {void}
-	 */
-	validateLanguageOptions(___languageOptions) {
-		// No validation needed - all options are optional
-		// year, strictBigInt, mode, preserveComments, tolerant
-	},
-
-	/**	 * Default parser options
+	 * Default language options
+	 * Required by ESLint 9 language API to supply defaults when a config specifies
+	 * none — ESLint deep-merges this with the config's `languageOptions` before
+	 * calling `validateLanguageOptions` and `parse()`.
 	 *
 	 * @public
 	 * @type {Object}
 	 */
-	defaultParserOptions: {
+	defaultLanguageOptions: {
 		year: 2025,
-		strictBigInt: false,
-		mode: "jsonv"
+		strictBigInt: false
 	}
 };
 
 /**
  * Recommended configuration for jsonv files
  *
+ * `languageOptions.parser` is intentionally omitted: that field is only read by
+ * ESLint's built-in "js" language (for its legacy custom-parser support) — a custom
+ * `language` such as `jsonv/jsonv` never consults it, so setting it here was inert.
+ *
  * @public
  * @type {Object}
  */
 const recommendedConfig = {
-	languageOptions: {
-		parser: jsonvLanguage
-	},
 	rules: {
 		// Add custom jsonv rules here in the future
 		// For now, parsing validation is enough
@@ -220,10 +283,7 @@ const recommendedConfig = {
  * @type {Object}
  */
 const plugin = {
-	meta: {
-		name: "eslint-plugin-jsonv",
-		version: "0.1.0"
-	},
+	meta: readPackageMeta(),
 	languages: {
 		jsonv: jsonvLanguage
 	},
