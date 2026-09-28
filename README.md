@@ -8,17 +8,19 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ## ✨ What's New
 
-### Latest: v1.0.12 (September 2026)
+### Latest: v1.0.13 (September 2026)
 
-- **A real ESLint AST for `.jsonv` files** — the `jsonv/jsonv` language now builds a positioned AST from `@cldmv/jsonv`'s `parseToAst()` instead of an empty `Program`. Rules can select objects, arrays, properties, literals, references and templates; reports land on the node they target instead of `1:0`; and inline `eslint-disable` / `eslint-enable` / `eslint-disable-next-line` comments now work. Requires `@cldmv/jsonv` 1.1.0 or later (#26).
-- [View full v1.0.12 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md)
+- **Published types describe a real ESLint plugin** — `dist/index.d.mts` typed the default export as a bare `Object`; it now types the plugin, the `jsonv/jsonv` language, `JsonvSourceCode` and every AST node against `@eslint/core`'s generics, checked in CI by a new `test:types` script, alongside a declared `engines.node` and `eslint` peer range that finally match what the runtime dependencies require (#30, #37, fixes #28, #32).
+- **Three more language options** — `mode` (`"jsonv"`, `"json5"` or `"json"`), `strictOctal` and `allowInternalReferences` are now accepted, validated and forwarded to `@cldmv/jsonv`, matching what the README already documented (#39, fixes #34).
+- **CLDMV lint/format tooling** — `lint`, `lint:fix`, `format` and `format:check` scripts, a pre-commit hook and the org's shared ESLint/Prettier config land, and the repository is reformatted repo-wide (#38, fixes #33).
+- [View full v1.0.13 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.13.md)
 
 ### Recent Releases
 
+- **v1.0.12** (September 2026) — the `jsonv/jsonv` language builds a real ESLint AST from `@cldmv/jsonv`'s `parseToAst()`, so rules can select nodes and inline `eslint-disable` comments work (#26) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md))
 - **v1.0.11** (September 2026) — language options are validated, parse errors report at their real position, and the plugin gained a vitest suite with a CI coverage badge (#16, #17, #18, #23, #24) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.11.md))
 - **v1.0.10** (September 2026) — the README links back to the jsonv repo (#15) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.10.md))
 - **v1.0.9** (September 2026) — corrected package name, badge row and license badges (#12) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.9.md))
-- **v1.0.8** (September 2026) — Node CI matrix updated for vitest 5 (max Node 26, min Node 22.12.0) (#10) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.8.md))
 
 📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
 
@@ -29,13 +31,15 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 - **Internal References**: Validates bare identifiers, template interpolation, nested property access
 - **BigInt Support**: Validates BigInt literals and numeric separators
 - **Accurate Error Reporting**: Parse errors include line/column information
-- **Year-Based Features**: Configurable target ES year for feature detection
+- **Configurable Parsing**: Target ES year, parse mode, strict BigInt and octal checks, and internal reference resolution
 
 ## Installation
 
 ```bash
 npm install --save-dev @cldmv/eslint-plugin-jsonv
 ```
+
+**Requirements:** Node `^20.19.0 || ^22.13.0 || >=24` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
 
 **Note:** This plugin requires `@cldmv/jsonv` as a peer dependency.
 
@@ -53,6 +57,7 @@ npm run build
 ```
 
 This will:
+
 1. Copy `index.mjs` into `dist/index.mjs`
 2. Generate type definitions into `dist/index.d.mts`
 3. Prepare the plugin for use
@@ -62,21 +67,21 @@ This will:
 ### ESLint Flat Config (eslint.config.mjs)
 
 ```javascript
-import jsonv from '@cldmv/eslint-plugin-jsonv';
+import jsonv from "@cldmv/eslint-plugin-jsonv";
 
 export default [
-  {
-    files: ["**/*.jsonv"],
-    plugins: { jsonv },
-    language: "jsonv/jsonv",
-    extends: ["jsonv/recommended"]
-  }
+	{
+		files: ["**/*.jsonv"],
+		plugins: { jsonv },
+		language: "jsonv/jsonv",
+		extends: ["jsonv/recommended"]
+	}
 ];
 ```
 
 ### Configuration Options
 
-The parser supports the following options:
+`languageOptions` are passed to the `@cldmv/jsonv` parser (both `parseWithOptions()`, which reports errors, and `parseToAst()`, which builds the AST rules see). Every option is optional; the values below are the defaults:
 
 ```javascript
 {
@@ -84,12 +89,30 @@ The parser supports the following options:
   plugins: { jsonv },
   language: "jsonv/jsonv",
   languageOptions: {
-    year: 2025,           // Target ES year (2011, 2015, 2020, 2021, 2022-2025)
-    strictBigInt: false,  // Require 'n' suffix for large integers
-    mode: "jsonv"         // Parse mode: "jsonv", "json5", "json"
+    year: 2025,                    // Target ES year: which jsonv features are allowed
+    mode: "jsonv",                 // Parse mode: "jsonv", "json5" or "json"
+    strictBigInt: false,           // true: an unsafe integer needs the `n` suffix
+    strictOctal: false,            // true: legacy `0755` octals are errors (use `0o755`)
+    allowInternalReferences: true  // false: references are not resolved or checked
   }
 }
 ```
+
+| Option                    | Type    | Allowed values                                                                                 | Default   | Meaning                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------- | ------- | ---------------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `year`                    | number  | `2011`, `2015`, `2016`, `2017`, `2018`, `2019`, `2020`, `2021`, `2022`, `2023`, `2024`, `2025` | `2025`    | The target ES year. A feature introduced after it is an error: binary/octal literals and template literals need 2015, BigInt needs 2020, numeric separators need 2021.                                                                                                                                                                                            |
+| `mode`                    | string  | `"jsonv"`, `"json5"`, `"json"`                                                                 | `"jsonv"` | The parse mode. `"jsonv"` allows every jsonv feature of the selected year, `"json5"` is meant for JSON5 only and `"json"` for strict JSON. The plugin passes the mode through unchanged, so it enforces exactly what `@cldmv/jsonv` enforces: in `@cldmv/jsonv` 1.1.0, `"json"` rejects comments, and the other JSON and JSON5 restrictions are not enforced yet. |
+| `strictBigInt`            | boolean | `true`, `false`                                                                                | `false`   | When `true`, an integer outside the safe range (±9007199254740991) without an `n` suffix is an error. When `false`, it is read as a BigInt.                                                                                                                                                                                                                       |
+| `strictOctal`             | boolean | `true`, `false`                                                                                | `false`   | When `true`, a legacy octal literal such as `0755` is an error; `0o755` is still allowed.                                                                                                                                                                                                                                                                         |
+| `allowInternalReferences` | boolean | `true`, `false`                                                                                | `true`    | When `true`, internal references (`backup: port`, `server.port`, `` `${host}` ``) are resolved, and an undefined or circular reference is an error. When `false`, they are left unresolved and are not reported.                                                                                                                                                  |
+
+Any other key, or a value outside the allowed ones, is a configuration error (a `TypeError` naming the option).
+
+Three `@cldmv/jsonv` parse options are deliberately not accepted:
+
+- `reviver`: a reviver only transforms the evaluated value, and linting does not use that value.
+- `preserveComments`: the AST always carries the comments, so inline `eslint-disable` comments and rules can see them.
+- `tolerant`: the plugin controls how parse errors are collected.
 
 ### Inline Configuration
 
@@ -99,17 +122,17 @@ The usual ESLint comments work inside `.jsonv` files: `// eslint-disable`, `/* e
 
 The `jsonv/jsonv` language exposes the document as an AST built from `@cldmv/jsonv`'s `parseToAst()`. Every node has a `loc` (1-based lines and columns) and a `range`, so reports on a node land on that node, and rules can use node types and selectors:
 
-| Node type | Children | Notes |
-|---|---|---|
-| `Program` | `body` | The document; `body` is the root value. `comments` and `tokens` hang off it. |
-| `ObjectExpression` | `properties` | `{ ... }` |
-| `Property` | `key`, `value` | `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key). |
-| `ArrayExpression` | `elements` | `[ ... ]` |
-| `Literal` | — | Strings, numbers, BigInt (`bigint` holds the digits), booleans, `null`, `Infinity`, `NaN`; `raw` is the source text. |
-| `Identifier` | — | An unquoted key, or an internal reference such as `backup: port`. |
-| `MemberExpression` | `object`, `property` | A dotted internal reference such as `server.port`. |
-| `TemplateLiteral` | `quasis`, `expressions` | A backtick string with `${...}` interpolation (a plain backtick string is a `Literal`). |
-| `TemplateElement` | — | A literal segment of a template. |
+| Node type          | Children                | Notes                                                                                                                |
+| ------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `Program`          | `body`                  | The document; `body` is the root value. `comments` and `tokens` hang off it.                                         |
+| `ObjectExpression` | `properties`            | `{ ... }`                                                                                                            |
+| `Property`         | `key`, `value`          | `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key).                                      |
+| `ArrayExpression`  | `elements`              | `[ ... ]`                                                                                                            |
+| `Literal`          | —                       | Strings, numbers, BigInt (`bigint` holds the digits), booleans, `null`, `Infinity`, `NaN`; `raw` is the source text. |
+| `Identifier`       | —                       | An unquoted key, or an internal reference such as `backup: port`.                                                    |
+| `MemberExpression` | `object`, `property`    | A dotted internal reference such as `server.port`.                                                                   |
+| `TemplateLiteral`  | `quasis`, `expressions` | A backtick string with `${...}` interpolation (a plain backtick string is a `Literal`).                              |
+| `TemplateElement`  | —                       | A literal segment of a template.                                                                                     |
 
 ```javascript
 // Report every string value containing "TODO", on the string itself
@@ -127,6 +150,7 @@ create(context) {
 ## Supported Features
 
 ### ES2011 (JSON5 Base)
+
 - Single-line (`//`) and multi-line (`/* */`) comments
 - Trailing commas in objects and arrays
 - Unquoted object keys
@@ -139,21 +163,27 @@ create(context) {
 - **Internal references via bare identifiers**: `{ port: 8080, backup: port }`
 
 ### ES2015 (ES6)
+
 - Binary literals (`0b1010`)
 - Octal literals (`0o755`, also legacy `0755`)
 - Template literals (backtick strings)
 - **Template interpolation for internal refs**: `` url: `http://${host}:${port}` ``
 
 ### ES2020
+
 - BigInt literals (`9007199254740992n`)
 - BigInt in hex/binary/octal formats
 
 ### ES2021
+
 - Numeric separators (`1_000_000`, `0xFF_AA`, `0b1111_0000`)
 
 ## Example
 
 **config.jsonv:**
+
+<!-- @cldmv/prettier-plugin-jsonv 1.0.6 rewrites this block destructively (keys become "[object Object]", comments and numeric formats are lost), so prettier leaves it verbatim. -->
+<!-- prettier-ignore -->
 ```jsonv
 {
   // Server configuration with internal references

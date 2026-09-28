@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"allowJs": true,
-		"checkJs": false,
+		"checkJs": true,
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"declarationMap": true,
@@ -14,7 +14,8 @@
 		"stripInternal": true,
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
-		"strict": true
+		"strict": true,
+		"types": ["node"]
 	},
 	"include": ["../index.mjs"],
 	"exclude": ["../node_modules", "../dist", "../types", "../tests"]

@@ -1,6 +1,6 @@
 {
 	"name": "@cldmv/eslint-plugin-jsonv",
-	"version": "1.0.12",
+	"version": "1.0.13",
 	"description": "ESLint plugin for @cldmv/jsonv files",
 	"type": "module",
 	"main": "./dist/index.mjs",
@@ -13,13 +13,19 @@
 	},
 	"scripts": {
 		"build": "npm run build:js && npm run build:types",
-		"build:ci": "npm run lint --if-present && npm run format:check --if-present && npm run build",
+		"build:ci": "npm run lint --if-present && npm run format:check --if-present && npm run build && npm run test:types",
 		"build:js": "node scripts/build.mjs",
 		"build:types": "tsc -p .configs/tsconfig.types.json",
 		"test": "node tests/run-vitest.mjs",
 		"test:watch": "vitest --config .configs/vitest.config.mjs",
+		"test:types": "npm run build:types && tsc -p tests/types/tsconfig.json",
 		"coverage": "node tests/run-vitest.mjs --coverage-quiet",
-		"ci:coverage": "npm run coverage"
+		"ci:coverage": "npm run coverage",
+		"lint": "eslint --config .configs/eslint.config.mjs .",
+		"lint:fix": "eslint --config .configs/eslint.config.mjs . --fix",
+		"format": "prettier --config .configs/.prettierrc --write .",
+		"format:check": "prettier --config .configs/.prettierrc --check .",
+		"prepare": "node -e \"import('./.githooks/install.mjs').catch(()=>{})\""
 	},
 	"publishConfig": {
 		"access": "public"
@@ -29,13 +35,22 @@
 		"README.md"
 	],
 	"peerDependencies": {
-		"@cldmv/jsonv": "^1.1.0"
+		"@cldmv/jsonv": "^1.1.0",
+		"eslint": "^9.13.0 || ^10.0.0"
 	},
 	"devDependencies": {
 		"@cldmv/jsonv": "^1.1.0",
+		"@cldmv/prettier-plugin-jsonv": "^1.0.6",
 		"@cldmv/vitest-runner": "^1.4.3",
+		"@eslint/css": "^2.0.0",
+		"@eslint/js": "^10.0.1",
+		"@eslint/json": "^2.1.0",
+		"@eslint/markdown": "^8.0.3",
+		"@types/node": "^26.6.3",
 		"@vitest/coverage-v8": "^5.0.2",
 		"eslint": "^10.11.0",
+		"globals": "^17.12.0",
+		"prettier": "^3.9.9",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.2"
 	},
@@ -80,9 +95,10 @@
 	},
 	"homepage": "https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/#readme",
 	"engines": {
-		"node": ">=18.0.0"
+		"node": "^20.19.0 || ^22.13.0 || >=24"
 	},
 	"dependencies": {
+		"@eslint/core": "^1.2.1",
 		"@eslint/plugin-kit": "^0.7.3"
 	}
 }

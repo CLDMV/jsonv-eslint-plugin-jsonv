@@ -64,7 +64,13 @@ describe("Linter — malformed jsonv", () => {
 		["unterminated array", "{\n  a: 1,\n  b: [1, 2\n}", "Expected ',' or ']' in array at line 4, column 0", 4, 1],
 		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", 1, 6],
 		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", 1, 6],
-		["undefined reference on a later line", "{\n  a: 1,\n  b: nope.c\n}", "Unresolved reference: nope.c (circular reference or undefined)", 3, 6]
+		[
+			"undefined reference on a later line",
+			"{\n  a: 1,\n  b: nope.c\n}",
+			"Unresolved reference: nope.c (circular reference or undefined)",
+			3,
+			6
+		]
 	])("reports a fatal parsing error for %s", (_label, code, message, line, column) => {
 		expect(lint(code)).toEqual([parsingError(message, line, column)]);
 	});
@@ -133,6 +139,76 @@ describe("Linter — languageOptions", () => {
 		expect(lint("{ a: 1_000n }", base)).toEqual([]);
 		expect(lint("{ a: 99999999999999999999 }", base)).toEqual([]);
 	});
+
+	it('mode: "json" reports a line comment at its position', () => {
+		expect(lint('{\n  // note\n  "a": 1\n}', { ...base, languageOptions: { mode: "json" } })).toEqual([
+			parsingError("Comments not allowed in JSON mode", 2, 3)
+		]);
+	});
+
+	it('mode: "json" reports a block comment at its position', () => {
+		expect(lint('{ "a": 1 /* note */ }', { ...base, languageOptions: { mode: "json" } })).toEqual([
+			parsingError("Comments not allowed in JSON mode", 1, 10)
+		]);
+	});
+
+	it('mode: "json" accepts a strict JSON document', () => {
+		expect(lint('{ "a": 1, "b": [true, null, "x"] }', { ...base, languageOptions: { mode: "json" } })).toEqual([]);
+	});
+
+	it.each(["jsonv", "json5"])('mode: "%s" accepts comments', (mode) => {
+		expect(lint('{\n  // note\n  "a": 1\n}', { ...base, languageOptions: { mode } })).toEqual([]);
+	});
+
+	it("strictOctal: true rejects a legacy octal literal at its position", () => {
+		expect(lint("{ a: 0755 }", { ...base, languageOptions: { strictOctal: true } })).toEqual([
+			parsingError("Legacy octal literals require 0o prefix in strict mode", 1, 6)
+		]);
+	});
+
+	it("strictOctal: true still accepts a 0o octal literal", () => {
+		expect(lint("{ a: 0o755 }", { ...base, languageOptions: { strictOctal: true } })).toEqual([]);
+	});
+
+	it("strictOctal: false (and the default) accepts a legacy octal literal", () => {
+		expect(lint("{ a: 0755 }", { ...base, languageOptions: { strictOctal: false } })).toEqual([]);
+		expect(lint("{ a: 0755 }", base)).toEqual([]);
+	});
+
+	it.each([
+		["an undefined reference", "{ a: missing }"],
+		["a circular reference", "{ a: b, b: a }"],
+		["an undefined dotted reference", "{ a: nope.c }"],
+		["an undefined template interpolation", "{ a: `x${nope}` }"]
+	])("allowInternalReferences: false leaves %s unresolved instead of reporting it", (_label, code) => {
+		expect(lint(code, { ...base, languageOptions: { allowInternalReferences: false } })).toEqual([]);
+		expect(lint(code, { ...base, languageOptions: { allowInternalReferences: true } })).toHaveLength(1);
+		expect(lint(code, base)).toHaveLength(1);
+	});
+
+	it("allowInternalReferences: false still reports syntax errors", () => {
+		expect(lint("{ a: }", { ...base, languageOptions: { allowInternalReferences: false } })).toEqual([
+			parsingError("Unexpected token: RBRACE at line 1, column 5", 1, 6)
+		]);
+	});
+
+	it("rejects an unsupported mode value with a config error", () => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { mode: "xml" } })).toThrow(
+			/Key "languageOptions": Invalid "mode" language option: "xml"\. Supported modes are: jsonv, json5, json\./
+		);
+	});
+
+	it.each(["strictOctal", "allowInternalReferences"])("rejects a non-boolean %s value with a config error", (key) => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { [key]: "yes" } })).toThrow(
+			new RegExp(`Key "languageOptions": Invalid "${key}" language option: expected a boolean, got string\\.`)
+		);
+	});
+
+	it.each(["reviver", "preserveComments", "tolerant"])("rejects jsonv's %s option, which the plugin does not support", (key) => {
+		expect(() => lint("{ a: 1 }", { ...base, languageOptions: { [key]: true } })).toThrow(
+			new RegExp(`Key "languageOptions": Language option "${key}" is not supported: `)
+		);
+	});
 });
 
 describe("Linter — rules on the jsonv language", () => {
@@ -166,7 +242,6 @@ describe("Linter — rules on the jsonv language", () => {
 		});
 	});
 
-
 	it("runs a core JavaScript rule without reporting anything", () => {
 		expect(lint("{ a: 1 }", { ...base, rules: { "no-debugger": "error" } })).toEqual([]);
 	});
@@ -185,7 +260,15 @@ describe("Linter — node positions (issue #19)", () => {
 	const config = { ...base, plugins: { ...base.plugins, l: { rules: { r: report } } }, rules: { "l/r": "error" } };
 
 	it("places a Program-node report at the document span and an explicit loc as given", () => {
-		expect(lint('{\n  a: 1,\n  b: "TODO"\n}', config).map(({ message, line, column, endLine, endColumn }) => [message, line, column, endLine, endColumn])).toEqual([
+		expect(
+			lint('{\n  a: 1,\n  b: "TODO"\n}', config).map(({ message, line, column, endLine, endColumn }) => [
+				message,
+				line,
+				column,
+				endLine,
+				endColumn
+			])
+		).toEqual([
 			["Program", 1, 1, 4, 2],
 			["explicit loc", 3, 5, undefined, undefined]
 		]);
@@ -204,7 +287,9 @@ describe("Linter — selectors on the AST (issue #19)", () => {
 	function select(selector, code) {
 		const rule = {
 			meta: { messages: { m: "{{text}}" } },
-			create: (context) => ({ [selector]: (node) => context.report({ node, messageId: "m", data: { text: context.sourceCode.getText(node) } }) })
+			create: (context) => ({
+				[selector]: (node) => context.report({ node, messageId: "m", data: { text: context.sourceCode.getText(node) } })
+			})
 		};
 		const config = { ...base, plugins: { ...base.plugins, s: { rules: { r: rule } } }, rules: { "s/r": "error" } };
 		return lint(code, config).map(({ message, line, column }) => [message, line, column]);
@@ -215,8 +300,27 @@ describe("Linter — selectors on the AST (issue #19)", () => {
 	it.each([
 		["ObjectExpression", [["{ deep: 2n }", 4, 11]], "ObjectExpression ObjectExpression"],
 		["ArrayExpression", [["[1, true, null]", 3, 9]], "ArrayExpression"],
-		["Property keys", [["name", 2, 3], ["list", 3, 3], ["nested", 4, 3], ["deep", 4, 13], ["ref", 5, 3], ["t", 6, 3]], "Property > .key"],
-		["array elements", [["1", 3, 10], ["true", 3, 13], ["null", 3, 19]], "ArrayExpression > Literal"],
+		[
+			"Property keys",
+			[
+				["name", 2, 3],
+				["list", 3, 3],
+				["nested", 4, 3],
+				["deep", 4, 13],
+				["ref", 5, 3],
+				["t", 6, 3]
+			],
+			"Property > .key"
+		],
+		[
+			"array elements",
+			[
+				["1", 3, 10],
+				["true", 3, 13],
+				["null", 3, 19]
+			],
+			"ArrayExpression > Literal"
+		],
 		["a string literal by value", [['"x"', 2, 9]], 'Literal[value="x"]'],
 		["a BigInt literal", [["2n", 4, 19]], "Literal[bigint]"],
 		["a member reference", [["nested.deep", 5, 8]], "MemberExpression"],
@@ -282,12 +386,15 @@ describe("Linter — inline configuration comments (issue #19)", () => {
 		expect(lint('/* eslint fixture/no-todo-value: "off" */\n{ a: "TODO" }', config)).toEqual([]);
 		const [message] = lint('/* eslint fixture/no-todo-value: "warn" */\n{ a: "TODO" }', config);
 		expect(message).toMatchObject({ ruleId: "fixture/no-todo-value", severity: 1, line: 2, column: 6 });
-		const [enabled] = lint('/* eslint fixture/no-todo: "error" */\n{ a: "TODO" }', { ...base, plugins: { ...base.plugins, fixture: fixturePlugin } });
+		const [enabled] = lint('/* eslint fixture/no-todo: "error" */\n{ a: "TODO" }', {
+			...base,
+			plugins: { ...base.plugins, fixture: fixturePlugin }
+		});
 		expect(enabled).toMatchObject({ ruleId: "fixture/no-todo", severity: 2 });
 	});
 
 	it("reports a malformed config comment and a multi-line eslint-disable-line as problems", () => {
-		const [malformed] = lint('/* eslint fixture/no-todo-value: [ */\n{ a: 1 }', config);
+		const [malformed] = lint("/* eslint fixture/no-todo-value: [ */\n{ a: 1 }", config);
 		expect(malformed).toMatchObject({ ruleId: null, fatal: true, line: 1, column: 1, endLine: 1, endColumn: 38 });
 		expect(malformed.message).toMatch(/^Failed to parse JSON from/);
 
@@ -325,9 +432,19 @@ describe("Linter — inline configuration comments (issue #19)", () => {
 	});
 
 	it("warns about inline config when noInlineConfig is set", () => {
-		const messages = linter.verify('// eslint-disable\n{ a: "TODO" }', { ...config, linterOptions: { noInlineConfig: true } }, "file.jsonv");
+		const messages = linter.verify(
+			'// eslint-disable\n{ a: "TODO" }',
+			{ ...config, linterOptions: { noInlineConfig: true } },
+			"file.jsonv"
+		);
 		expect(messages).toEqual([
-			expect.objectContaining({ ruleId: null, severity: 1, message: expect.stringContaining("'// eslint-disable' has no effect"), line: 1, column: 1 }),
+			expect.objectContaining({
+				ruleId: null,
+				severity: 1,
+				message: expect.stringContaining("'// eslint-disable' has no effect"),
+				line: 1,
+				column: 1
+			}),
 			expect.objectContaining({ ruleId: "fixture/no-todo-value", line: 2, column: 6 })
 		]);
 	});
