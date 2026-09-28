@@ -103,10 +103,10 @@ jobs:
       github_packages_publish_command: ""
       min_node_version: ${{ github.event.inputs.min_node_version || '22.12.0' }}
       max_node_major: ${{ github.event.inputs.max_node_major || '26' }}
-      test_command: "echo '✓ no tests defined'"
+      test_command: "npm test" # Use defaults: NODE_ENV=development, NODE_OPTIONS=--conditions=development
       # test_command: "NODE_ENV=test npm test"  # Override NODE_ENV only
       test_environment: ${{ github.event.inputs.test_environment || 'development' }} # Alternative to setting in test_command
-      build_command: "npm run build"
+      build_command: "npm run build:ci"
       # --- Satellite packages (optional) ----------------------------------------
       # Publish extra packages carved from this build's output (e.g. locale JSON,
       # generated types) at the SAME version/commit as the core, each with its own
