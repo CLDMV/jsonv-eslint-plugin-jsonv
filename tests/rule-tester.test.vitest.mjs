@@ -1,12 +1,13 @@
 /**
  * @fileoverview RuleTester (flat config) runs against the `jsonv/jsonv` language:
  * valid/invalid cases, messages, locations, options and autofix output for the
- * fixture rules in ./fixtures/rules.mjs.
+ * fixture rules in ./fixtures/rules.mjs. Reports on the Program node span the whole
+ * document; reports on an inner node land on that node's own 1-based position.
  */
 import { describe, it } from "vitest";
 import { RuleTester } from "eslint";
 import plugin from "../index.mjs";
-import { maxLines, noTodo } from "./fixtures/rules.mjs";
+import { maxLines, noTodo, noTodoValue } from "./fixtures/rules.mjs";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -31,7 +32,7 @@ ruleTester.run("no-todo (jsonv language)", noTodo, {
 			filename,
 			code: '{ status: "TODO" }',
 			output: '{ status: "DONE" }',
-			errors: [{ messageId: "todo", line: 1, column: 0, endLine: 1, endColumn: 0 }]
+			errors: [{ messageId: "todo", line: 1, column: 1, endLine: 1, endColumn: 19 }]
 		},
 		{
 			filename,
@@ -66,6 +67,37 @@ es2011Tester.run("no-todo (jsonv language, year 2011)", noTodo, {
 			code: "{ a: 'TODO' }",
 			output: "{ a: 'DONE' }",
 			errors: [{ messageId: "todo" }]
+		}
+	]
+});
+
+ruleTester.run("no-todo-value (jsonv language, node-level reports)", noTodoValue, {
+	valid: [
+		{ filename, code: '{ status: "done" }' },
+		{ filename, code: '{ "TODO": 1, list: ["TODO"] }' },
+		{ filename, code: "// TODO: comment only\n{ a: 1 }" }
+	],
+	invalid: [
+		{
+			filename,
+			code: '{\n  a: 1,\n  b: "TODO"\n}',
+			output: '{\n  a: 1,\n  b: "DONE"\n}',
+			errors: [{ messageId: "todo", data: { key: "b" }, line: 3, column: 6, endLine: 3, endColumn: 12 }]
+		},
+		{
+			filename,
+			code: "{\r\n  'x y': 'a TODO',\r\n  7: `TODO`\r\n}",
+			output: "{\r\n  'x y': 'a DONE',\r\n  7: `DONE`\r\n}",
+			errors: [
+				{ message: "Unexpected TODO in the value of x y.", line: 2, column: 10, endLine: 2, endColumn: 18 },
+				{ message: "Unexpected TODO in the value of 7.", line: 3, column: 6, endLine: 3, endColumn: 12 }
+			]
+		},
+		{
+			filename,
+			code: '{\n  // eslint-disable-next-line\n  a: "TODO",\n  b: "TODO" // eslint-disable-line\n, c: "TODO" }',
+			output: '{\n  // eslint-disable-next-line\n  a: "TODO",\n  b: "TODO" // eslint-disable-line\n, c: "DONE" }',
+			errors: [{ messageId: "todo", data: { key: "c" }, line: 5, column: 6, endLine: 5, endColumn: 12 }]
 		}
 	]
 });

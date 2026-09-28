@@ -19,13 +19,12 @@ function run(body, languageOptions) {
 	return parse({ body }, languageOptions === undefined ? {} : { languageOptions });
 }
 
-const EMPTY_PROGRAM = { type: "Program", body: [], sourceType: "module", comments: [], tokens: [] };
-
 describe("parse() — valid input", () => {
-	it("returns ok with a minimal Program AST and the parsed value", () => {
+	it("returns ok with a Program AST and the evaluated value", () => {
 		const result = run('{ a: 1, b: "x" }');
 		expect(result.ok).toBe(true);
-		expect(result.ast).toEqual(EMPTY_PROGRAM);
+		expect(result.ast.type).toBe("Program");
+		expect(result.ast.body.type).toBe("ObjectExpression");
 		expect(result.jsonvValue).toEqual({ a: 1, b: "x" });
 	});
 
@@ -136,15 +135,28 @@ describe("parse() — malformed input", () => {
 		]);
 	});
 
-	// Unresolved-reference errors are still a plain `Error` with no position in jsonv 1.0.10
-	// (jsonv#32 tracks giving them one) — fall back to 1:1 and omit endLine/endColumn.
+	// @cldmv/jsonv 1.1.0 throws a `JsonvReferenceError` for unresolved and circular internal
+	// references, positioned on the offending reference node (0-based column, like syntax errors).
 	it.each([
-		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)"],
-		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)"]
-	])("falls back to line 1, column 1 for %s (jsonv#32 — no position on reference errors yet)", (_label, body, message) => {
+		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", { line: 1, column: 6, endLine: 1, endColumn: 13 }],
+		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", { line: 1, column: 6, endLine: 1, endColumn: 7 }],
+		[
+			"unresolved template interpolation",
+			"{\n  x: `${nope}`\n}",
+			"Unresolved reference: <template> (circular reference or undefined)",
+			{ line: 2, column: 6, endLine: 2, endColumn: 15 }
+		]
+	])("reports a %s at the reference's source position", (_label, body, message, position) => {
 		const result = run(body);
 		expect(result.ok).toBe(false);
 		expect(result).not.toHaveProperty("ast");
-		expect(result.errors).toEqual([{ message, line: 1, column: 1 }]);
+		expect(result.errors).toEqual([{ message, ...position }]);
+	});
+
+	it("falls back to line 1, column 1 for an error that carries no position (call-stack exhaustion on deep nesting)", () => {
+		const depth = 100000;
+		const result = run("[".repeat(depth) + "]".repeat(depth));
+		expect(result.ok).toBe(false);
+		expect(result.errors).toEqual([{ message: expect.stringMatching(/call stack/i), line: 1, column: 1 }]);
 	});
 });
