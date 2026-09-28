@@ -8,17 +8,19 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ## ✨ What's New
 
-### Latest: v1.0.12 (September 2026)
+### Latest: v1.0.13 (September 2026)
 
-- **A real ESLint AST for `.jsonv` files** — the `jsonv/jsonv` language now builds a positioned AST from `@cldmv/jsonv`'s `parseToAst()` instead of an empty `Program`. Rules can select objects, arrays, properties, literals, references and templates; reports land on the node they target instead of `1:0`; and inline `eslint-disable` / `eslint-enable` / `eslint-disable-next-line` comments now work. Requires `@cldmv/jsonv` 1.1.0 or later (#26).
-- [View full v1.0.12 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md)
+- **Published types describe a real ESLint plugin** — `dist/index.d.mts` typed the default export as a bare `Object`; it now types the plugin, the `jsonv/jsonv` language, `JsonvSourceCode` and every AST node against `@eslint/core`'s generics, checked in CI by a new `test:types` script, alongside a declared `engines.node` and `eslint` peer range that finally match what the runtime dependencies require (#30, #37, fixes #28, #32).
+- **Three more language options** — `mode` (`"jsonv"`, `"json5"` or `"json"`), `strictOctal` and `allowInternalReferences` are now accepted, validated and forwarded to `@cldmv/jsonv`, matching what the README already documented (#39, fixes #34).
+- **CLDMV lint/format tooling** — `lint`, `lint:fix`, `format` and `format:check` scripts, a pre-commit hook and the org's shared ESLint/Prettier config land, and the repository is reformatted repo-wide (#38, fixes #33).
+- [View full v1.0.13 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.13.md)
 
 ### Recent Releases
 
+- **v1.0.12** (September 2026) — the `jsonv/jsonv` language builds a real ESLint AST from `@cldmv/jsonv`'s `parseToAst()`, so rules can select nodes and inline `eslint-disable` comments work (#26) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md))
 - **v1.0.11** (September 2026) — language options are validated, parse errors report at their real position, and the plugin gained a vitest suite with a CI coverage badge (#16, #17, #18, #23, #24) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.11.md))
 - **v1.0.10** (September 2026) — the README links back to the jsonv repo (#15) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.10.md))
 - **v1.0.9** (September 2026) — corrected package name, badge row and license badges (#12) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.9.md))
-- **v1.0.8** (September 2026) — Node CI matrix updated for vitest 5 (max Node 26, min Node 22.12.0) (#10) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.8.md))
 
 📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
 
