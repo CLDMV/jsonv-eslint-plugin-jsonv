@@ -29,7 +29,7 @@
  */
 
 // Use proper package import - package is copied to node_modules during build
-import { parseWithOptions } from "@cldmv/jsonv/parser";
+import { JsonvSyntaxError, parseWithOptions } from "@cldmv/jsonv/parser";
 
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -127,16 +127,24 @@ const jsonvLanguage = {
 				jsonvValue: result
 			};
 		} catch (error) {
+			// @cldmv/jsonv (>=1.0.10) throws a `JsonvSyntaxError` — or its `LexerError` subclass, which
+			// extends it — for every parser-level and lexer-level failure, carrying the real
+			// `line`/`column`/`loc` of the failure. Its `column` is 0-based (matching the column
+			// embedded in its own messages), while this language's `columnStart: 1` means ESLint
+			// expects 1-based columns, so the reported column is `error.column + 1`.
+			//
+			// Unresolved-reference errors (jsonv#32, in progress) are still a plain `Error` with no
+			// position — fall back to line 1, column 1 for anything that isn't a `JsonvSyntaxError`.
+			const hasPosition = error instanceof JsonvSyntaxError;
+
+			const errorInfo = hasPosition
+				? { message: error.message, line: error.line, column: error.column + 1, endLine: error.loc.end.line, endColumn: error.loc.end.column + 1 }
+				: { message: error.message, line: 1, column: 1 };
+
 			// Return error result
 			return {
 				ok: false,
-				errors: [
-					{
-						message: error.message,
-						line: error.line || 1,
-						column: error.column || 1
-					}
-				]
+				errors: [errorInfo]
 			};
 		}
 	},

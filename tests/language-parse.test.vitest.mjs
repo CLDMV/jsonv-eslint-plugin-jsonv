@@ -94,25 +94,57 @@ describe("parse() — languageOptions", () => {
 });
 
 describe("parse() — malformed input", () => {
+	// @cldmv/jsonv 1.0.10 throws a `JsonvSyntaxError` (or its `LexerError` subclass) for every
+	// parser-level and lexer-level failure, carrying a real `line`/`column`/`loc`. ESLint's
+	// language API uses 1-based columns (`columnStart: 1`), while jsonv's `column` — like the
+	// one embedded in its messages — is 0-based, so the reported column is `error.column + 1`.
 	it.each([
-		["empty file", "", "Unexpected token: EOF at line 1, column 0"],
-		["missing value", "{ a: }", "Unexpected token: RBRACE at line 1, column 5"],
-		["unterminated array", "{\n  a: 1,\n  b: [1, 2\n}", "Expected ',' or ']' in array at line 4, column 0"],
-		["computed key", "{ [k]: 1 }", "Expected property key, got LBRACKET at line 1, column 2"],
-		["function value", "{ a: function() {} }", "Unexpected character: '('"],
+		["empty file", "", "Unexpected token: EOF at line 1, column 0", { line: 1, column: 1, endLine: 1, endColumn: 1 }],
+		["missing value", "{ a: }", "Unexpected token: RBRACE at line 1, column 5", { line: 1, column: 6, endLine: 1, endColumn: 7 }],
+		[
+			"unterminated array (multi-line, LF)",
+			"{\n  a: 1,\n  b: [1, 2\n}",
+			"Expected ',' or ']' in array at line 4, column 0",
+			{ line: 4, column: 1, endLine: 4, endColumn: 2 }
+		],
+		[
+			"unterminated array (multi-line, CRLF)",
+			"{\r\n  a: 1,\r\n  b: [1, 2\r\n}",
+			"Expected ',' or ']' in array at line 4, column 0",
+			{ line: 4, column: 1, endLine: 4, endColumn: 2 }
+		],
+		["computed key", "{ [k]: 1 }", "Expected property key, got LBRACKET at line 1, column 2", { line: 1, column: 3, endLine: 1, endColumn: 4 }],
+		["function value (lexer error)", "{ a: function() {} }", "Unexpected character: '('", { line: 1, column: 14, endLine: 1, endColumn: 14 }],
+		["unterminated string (lexer error)", '{ a: "unterminated }', "Unterminated string", { line: 1, column: 21, endLine: 1, endColumn: 21 }]
+	])("reports %s at its real source position", (_label, body, message, position) => {
+		const result = run(body);
+		expect(result.ok).toBe(false);
+		expect(result).not.toHaveProperty("ast");
+		expect(result.errors).toEqual([{ message, ...position }]);
+	});
+
+	it("reports a parser-level error at its real position across multiple lines", () => {
+		const result = run("[\n\n\n  1,\n  }");
+		expect(result.errors).toEqual([
+			{
+				message: expect.stringMatching(/at line 5, column 2$/),
+				line: 5,
+				column: 3,
+				endLine: 5,
+				endColumn: 4
+			}
+		]);
+	});
+
+	// Unresolved-reference errors are still a plain `Error` with no position in jsonv 1.0.10
+	// (jsonv#32 tracks giving them one) — fall back to 1:1 and omit endLine/endColumn.
+	it.each([
 		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)"],
 		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)"]
-	])("reports %s as a single error", (_label, body, message) => {
+	])("falls back to line 1, column 1 for %s (jsonv#32 — no position on reference errors yet)", (_label, body, message) => {
 		const result = run(body);
 		expect(result.ok).toBe(false);
 		expect(result).not.toHaveProperty("ast");
 		expect(result.errors).toEqual([{ message, line: 1, column: 1 }]);
-	});
-
-	it("reports every error at line 1, column 1 because parser errors carry the position only in the message", () => {
-		const result = run("[\n\n\n  1,\n  }");
-		expect(result.errors[0].message).toMatch(/at line 5, column 2$/);
-		expect(result.errors[0].line).toBe(1);
-		expect(result.errors[0].column).toBe(1);
 	});
 });
