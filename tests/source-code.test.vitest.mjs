@@ -216,7 +216,9 @@ describe("createSourceCode() — inline configuration", () => {
 	});
 
 	it("returns disable/enable directives with their comment node, value and justification", () => {
-		const source = sourceFor("/* eslint-disable a/b, c -- why */\n// eslint-enable\n{ a: 1 } // eslint-disable-line x\n// eslint-disable-next-line\n");
+		const source = sourceFor(
+			"/* eslint-disable a/b, c -- why */\n// eslint-enable\n{ a: 1 } // eslint-disable-line x\n// eslint-disable-next-line\n"
+		);
 		const { directives, problems } = source.getDisableDirectives();
 		expect(problems).toEqual([]);
 		expect(directives.every((directive) => directive instanceof Directive)).toBe(true);
@@ -260,7 +262,11 @@ describe("createSourceCode() — inline configuration", () => {
 		const { configs, problems } = source.applyInlineConfig();
 		expect(configs).toEqual([]);
 		expect(problems).toEqual([
-			{ ruleId: null, message: expect.stringContaining("Failed to parse JSON from"), loc: { start: { line: 1, column: 1 }, end: { line: 1, column: 20 } } }
+			{
+				ruleId: null,
+				message: expect.stringContaining("Failed to parse JSON from"),
+				loc: { start: { line: 1, column: 1 }, end: { line: 1, column: 20 } }
+			}
 		]);
 	});
 });

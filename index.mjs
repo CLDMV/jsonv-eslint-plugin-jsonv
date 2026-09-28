@@ -501,7 +501,10 @@ function toEslintPosition(loc) {
 function convertLeaf(element) {
 	// TypeScript types a spread of a generic as an intersection (`T & {loc, range}`), which keeps
 	// the jsonv `loc` type alongside the ESLint one; the cast states the actual replacement.
-	return /** @type {{[K in keyof T]: K extends "loc" ? SourceLocation : T[K]} & {range: SourceRange}} */ ({ ...element, ...toEslintPosition(element.loc) });
+	return /** @type {{[K in keyof T]: K extends "loc" ? SourceLocation : T[K]} & {range: SourceRange}} */ ({
+		...element,
+		...toEslintPosition(element.loc)
+	});
 }
 
 /**
@@ -675,7 +678,9 @@ class JsonvSourceCode extends TextSourceCodeBase {
 		for (const comment of this.getInlineConfigNodes()) {
 			// parseDirective() returns undefined only for text that doesn't start with a directive label;
 			// every comment here matched INLINE_CONFIG, which requires one.
-			const { label, value, justification } = /** @type {NonNullable<ReturnType<ConfigCommentParser["parseDirective"]>>} */ (commentParser.parseDirective(comment.value));
+			const { label, value, justification } = /** @type {NonNullable<ReturnType<ConfigCommentParser["parseDirective"]>>} */ (
+				commentParser.parseDirective(comment.value)
+			);
 
 			if (label === "eslint-disable-line" && comment.loc.start.line !== comment.loc.end.line) {
 				problems.push({ ruleId: null, message: `${label} comment should not span multiple lines.`, loc: comment.loc });
@@ -707,7 +712,9 @@ class JsonvSourceCode extends TextSourceCodeBase {
 
 		for (const comment of this.getInlineConfigNodes()) {
 			// Defined for the same reason as in getDisableDirectives().
-			const { label, value } = /** @type {NonNullable<ReturnType<ConfigCommentParser["parseDirective"]>>} */ (commentParser.parseDirective(comment.value));
+			const { label, value } = /** @type {NonNullable<ReturnType<ConfigCommentParser["parseDirective"]>>} */ (
+				commentParser.parseDirective(comment.value)
+			);
 			if (label !== "eslint") continue;
 
 			const parseResult = commentParser.parseJSONLikeConfig(value);
@@ -796,7 +803,13 @@ const jsonvLanguage = {
 			// above included), hence the cast in the fallback branch.
 			/** @type {FileError} */
 			const errorInfo = hasPosition
-				? { message: error.message, line: error.line, column: error.column + 1, endLine: error.loc.end.line, endColumn: error.loc.end.column + 1 }
+				? {
+						message: error.message,
+						line: error.line,
+						column: error.column + 1,
+						endLine: error.loc.end.line,
+						endColumn: error.loc.end.column + 1
+					}
 				: { message: /** @type {Error} */ (error).message, line: 1, column: 1 };
 
 			return {
