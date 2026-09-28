@@ -25,14 +25,18 @@ function lint(code, config = base) {
 }
 
 /**
- * Builds the single fatal message ESLint emits for a parse failure.
+ * Builds the single fatal message ESLint emits for a parse failure. `line`/`column` default to
+ * 1:1 for reference errors, which jsonv still throws with no position (jsonv#32); a positioned
+ * jsonv error (every parser/lexer failure) passes its real 1-based `line`/`column`.
  * @param {string} message - The parser's message (without the "Parsing error: " prefix).
+ * @param {number} [line] - Expected 1-based line.
+ * @param {number} [column] - Expected 1-based column.
  * @returns {object} Expected lint message.
  * @example
- * parsingError("Unexpected token: EOF at line 1, column 0");
+ * parsingError("Unexpected token: RBRACE at line 1, column 5", 1, 6);
  */
-function parsingError(message) {
-	return { ruleId: null, fatal: true, severity: 2, message: `Parsing error: ${message}`, line: 1, column: 1 };
+function parsingError(message, line = 1, column = 1) {
+	return { ruleId: null, fatal: true, severity: 2, message: `Parsing error: ${message}`, line, column };
 }
 
 describe("Linter — valid jsonv", () => {
@@ -56,18 +60,18 @@ describe("Linter — valid jsonv", () => {
 
 describe("Linter — malformed jsonv", () => {
 	it.each([
-		["empty file", "", "Unexpected token: EOF at line 1, column 0"],
-		["missing value", "{ a: }", "Unexpected token: RBRACE at line 1, column 5"],
-		["unterminated array", "{\n  a: 1,\n  b: [1, 2\n}", "Expected ',' or ']' in array at line 4, column 0"],
-		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)"],
-		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)"]
-	])("reports a fatal parsing error for %s", (_label, code, message) => {
-		expect(lint(code)).toEqual([parsingError(message)]);
+		["empty file", "", "Unexpected token: EOF at line 1, column 0", 1, 1],
+		["missing value", "{ a: }", "Unexpected token: RBRACE at line 1, column 5", 1, 6],
+		["unterminated array", "{\n  a: 1,\n  b: [1, 2\n}", "Expected ',' or ']' in array at line 4, column 0", 4, 1],
+		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", 1, 1],
+		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", 1, 1]
+	])("reports a fatal parsing error for %s", (_label, code, message, line, column) => {
+		expect(lint(code)).toEqual([parsingError(message, line, column)]);
 	});
 
 	it("reports the same parsing error with configs.recommended spread in", () => {
 		expect(lint("{ a: }", { ...base, ...plugin.configs.recommended })).toEqual([
-			parsingError("Unexpected token: RBRACE at line 1, column 5")
+			parsingError("Unexpected token: RBRACE at line 1, column 5", 1, 6)
 		]);
 	});
 
@@ -80,11 +84,11 @@ describe("Linter — malformed jsonv", () => {
 
 describe("Linter — languageOptions", () => {
 	it.each([
-		[2011, "{ a: 0b101 }", "Binary literals not allowed in this year"],
-		[2019, "{ a: 123n }", "BigInt literals not allowed in this year"],
-		[2020, "{ a: 1_000 }", "Numeric separators not allowed in this year"]
-	])("year %i rejects features introduced later", (year, code, message) => {
-		expect(lint(code, { ...base, languageOptions: { year } })).toEqual([parsingError(message)]);
+		[2011, "{ a: 0b101 }", "Binary literals not allowed in this year", 1, 6],
+		[2019, "{ a: 123n }", "BigInt literals not allowed in this year", 1, 9],
+		[2020, "{ a: 1_000 }", "Numeric separators not allowed in this year", 1, 7]
+	])("year %i rejects features introduced later", (year, code, message, line, column) => {
+		expect(lint(code, { ...base, languageOptions: { year } })).toEqual([parsingError(message, line, column)]);
 	});
 
 	it.each([
@@ -197,7 +201,7 @@ describe("defineConfig extends", () => {
 
 	it("lints with the extended config", () => {
 		expect(lint("{ a: 1 }", config)).toEqual([]);
-		expect(lint("{ a: }", config)).toEqual([parsingError("Unexpected token: RBRACE at line 1, column 5")]);
+		expect(lint("{ a: }", config)).toEqual([parsingError("Unexpected token: RBRACE at line 1, column 5", 1, 6)]);
 	});
 });
 

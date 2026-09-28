@@ -29,10 +29,10 @@
 		"README.md"
 	],
 	"peerDependencies": {
-		"@cldmv/jsonv": "^1.0.2"
+		"@cldmv/jsonv": "^1.0.10"
 	},
 	"devDependencies": {
-		"@cldmv/jsonv": "^1.0.2",
+		"@cldmv/jsonv": "^1.0.10",
 		"@cldmv/vitest-runner": "^1.4.3",
 		"@vitest/coverage-v8": "^5.0.2",
 		"eslint": "^10.11.0",
