@@ -76,7 +76,12 @@ export default [
 
 ### Configuration Options
 
-The parser supports the following options:
+`languageOptions` accepts exactly two keys — any other key throws a `TypeError`:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `year` | `number` — one of `2011`, `2015`–`2025` | `2025` | Target ES year for feature detection (gates BigInt, numeric separators, binary/octal literals, template literals, etc. to the features available in that year). |
+| `strictBigInt` | `boolean` | `false` | When `true`, integers outside the safe integer range must carry the `n` BigInt suffix. |
 
 ```javascript
 {
@@ -84,9 +89,8 @@ The parser supports the following options:
   plugins: { jsonv },
   language: "jsonv/jsonv",
   languageOptions: {
-    year: 2025,           // Target ES year (2011, 2015, 2020, 2021, 2022-2025)
-    strictBigInt: false,  // Require 'n' suffix for large integers
-    mode: "jsonv"         // Parse mode: "jsonv", "json5", "json"
+    year: 2025,          // Target ES year
+    strictBigInt: false  // Require 'n' suffix for unsafe integers
   }
 }
 ```
