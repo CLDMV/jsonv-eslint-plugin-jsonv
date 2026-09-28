@@ -86,7 +86,8 @@ function documentedLanguageOptions(markdown) {
 function tableOptions(markdown) {
 	const section = markdown.slice(markdown.indexOf("### Configuration Options"));
 	const body = section.slice(0, section.indexOf("\n### ", 1));
-	return [...body.matchAll(/^\| `([^`]+)` \|/gmu)].map((match) => match[1]);
+	// Prettier pads every cell to its column width, so allow any run of spaces after the name.
+	return [...body.matchAll(/^\| `([^`]+)` *\|/gmu)].map((match) => match[1]);
 }
 
 describe("README — Configuration Options", () => {
