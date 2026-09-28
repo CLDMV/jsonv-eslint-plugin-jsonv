@@ -13,8 +13,13 @@
 	},
 	"scripts": {
 		"build": "npm run build:js && npm run build:types",
+		"build:ci": "npm run lint --if-present && npm run format:check --if-present && npm run build",
 		"build:js": "node scripts/build.mjs",
-		"build:types": "tsc -p .configs/tsconfig.types.json"
+		"build:types": "tsc -p .configs/tsconfig.types.json",
+		"test": "node tests/run-vitest.mjs",
+		"test:watch": "vitest --config .configs/vitest.config.mjs",
+		"coverage": "node tests/run-vitest.mjs --coverage-quiet",
+		"ci:coverage": "npm run coverage"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -28,7 +33,11 @@
 	},
 	"devDependencies": {
 		"@cldmv/jsonv": "^1.0.2",
-		"typescript": "^5.9.3"
+		"@cldmv/vitest-runner": "^1.4.3",
+		"@vitest/coverage-v8": "^5.0.2",
+		"eslint": "^10.11.0",
+		"typescript": "^5.9.3",
+		"vitest": "^5.0.2"
 	},
 	"keywords": [
 		"eslint",
