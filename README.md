@@ -11,6 +11,7 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 ### Latest: v1.0.12 (September 2026)
 
 - **A real ESLint AST for `.jsonv` files** — the `jsonv/jsonv` language now builds a positioned AST from `@cldmv/jsonv`'s `parseToAst()` instead of an empty `Program`. Rules can select objects, arrays, properties, literals, references and templates; reports land on the node they target instead of `1:0`; and inline `eslint-disable` / `eslint-enable` / `eslint-disable-next-line` comments now work. Requires `@cldmv/jsonv` 1.1.0 or later (#26).
+- **Real TypeScript types** — the published declarations type the plugin, the `jsonv/jsonv` language and its options, and every AST node, replacing the old bare `Object`. The plugin drops into a typed `defineConfig()` without a cast, misspelled language options are type errors, and rule authors can import node types such as `JsonvProperty` and `JsonvLiteral` (#30).
 - [View full v1.0.12 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md)
 
 ### Recent Releases
