@@ -1,4 +1,19 @@
 /**
+ *
+ *	@Project: @cldmv/eslint-plugin-jsonv
+ *	@Filename: /tests/readme.test.vitest.mjs
+ *	@Date: 2026-09-28T20:00:50+00:00 (1790625650)
+ *	@Author: Nate Corcoran <CLDMV>
+ *	@Email: <Shinrai@users.noreply.github.com>
+ *	-----
+ *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
+ *	@Last modified time: 2026-10-02T12:15:40-07:00 (1790968540)
+ *	-----
+ *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
+ *
+ */
+
+/**
  * @fileoverview Keeps the README's language options in step with the code. The `languageOptions`
  * object literals are extracted from the README's JavaScript code blocks and evaluated; their keys
  * must be exactly the options the language supports, `validateLanguageOptions` must accept them,

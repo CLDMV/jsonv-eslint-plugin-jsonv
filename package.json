@@ -1,6 +1,6 @@
 {
 	"name": "@cldmv/eslint-plugin-jsonv",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "ESLint plugin for @cldmv/jsonv files",
 	"type": "module",
 	"main": "./dist/index.mjs",
@@ -25,7 +25,8 @@
 		"lint:fix": "eslint --config .configs/eslint.config.mjs . --fix",
 		"format": "prettier --config .configs/.prettierrc --write .",
 		"format:check": "prettier --config .configs/.prettierrc --check .",
-		"prepare": "node -e \"import('./.githooks/install.mjs').catch(()=>{})\""
+		"prepare": "node -e \"import('./.githooks/install.mjs').catch(()=>{})\"",
+		"fix:headers": "fix-headers --config .configs/fix-headers.json"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -39,6 +40,8 @@
 		"eslint": "^9.13.0 || ^10.0.0"
 	},
 	"devDependencies": {
+		"@cldmv/configs": "^1.2.0",
+		"@cldmv/fix-headers": "^2.1.1",
 		"@cldmv/jsonv": "^1.1.0",
 		"@cldmv/prettier-plugin-jsonv": "^1.0.6",
 		"@cldmv/vitest-runner": "^1.4.3",

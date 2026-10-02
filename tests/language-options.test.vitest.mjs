@@ -1,4 +1,19 @@
 /**
+ *
+ *	@Project: @cldmv/eslint-plugin-jsonv
+ *	@Filename: /tests/language-options.test.vitest.mjs
+ *	@Date: 2026-09-28T20:00:50+00:00 (1790625650)
+ *	@Author: Nate Corcoran <CLDMV>
+ *	@Email: <Shinrai@users.noreply.github.com>
+ *	-----
+ *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
+ *	@Last modified time: 2026-10-02T12:15:40-07:00 (1790968540)
+ *	-----
+ *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
+ *
+ */
+
+/**
  * @fileoverview Every language option reaches @cldmv/jsonv: `parse()` forwards `year`, `mode`,
  * `strictBigInt`, `strictOctal` and `allowInternalReferences` (with the defaults filled in) to
  * both `parseWithOptions()` and `parseToAst()`, and the plugin's verdict for each mode is
