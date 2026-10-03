@@ -79,13 +79,16 @@ describe("parse() — options forwarded to @cldmv/jsonv", () => {
 		["strictOctal", true],
 		["allowInternalReferences", false]
 	])("forwards %s: %j alongside the other defaults", (key, value) => {
-		run("{ a: 1 }", { [key]: value });
-		expect(parseWithOptions).toHaveBeenCalledExactlyOnceWith("{ a: 1 }", { ...defaults, [key]: value, tolerant: false });
-		expect(parseToAst).toHaveBeenCalledExactlyOnceWith("{ a: 1 }", { ...defaults, [key]: value });
+		// A quoted key, unlike `{ a: 1 }`, parses under every mode under test here — mode: "json"
+		// rejects an unquoted key (@cldmv/jsonv >=1.1.1 enforces this), which would short-circuit
+		// before parseToAst() is ever called and make the assertion below moot.
+		run('{ "a": 1 }', { [key]: value });
+		expect(parseWithOptions).toHaveBeenCalledExactlyOnceWith('{ "a": 1 }', { ...defaults, [key]: value, tolerant: false });
+		expect(parseToAst).toHaveBeenCalledExactlyOnceWith('{ "a": 1 }', { ...defaults, [key]: value });
 	});
 
 	it("never forwards reviver, preserveComments or a tolerant parseToAst", () => {
-		run("{ a: 1 }", { mode: "json" });
+		run('{ "a": 1 }', { mode: "json" });
 		const [, pwoOptions] = parseWithOptions.mock.calls[0];
 		const [, astOptions] = parseToAst.mock.calls[0];
 		expect(pwoOptions).not.toHaveProperty("reviver");
