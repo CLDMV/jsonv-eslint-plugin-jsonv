@@ -78,7 +78,7 @@ describe("Linter — malformed jsonv", () => {
 		["missing value", "{ a: }", "Unexpected token: RBRACE at line 1, column 5", 1, 6],
 		["unterminated array", "{\n  a: 1,\n  b: [1, 2\n}", "Expected ',' or ']' in array at line 4, column 0", 4, 1],
 		["undefined reference", "{ a: missing }", "Unresolved reference: missing (circular reference or undefined)", 1, 6],
-		["circular reference", "{ a: b, b: a }", "Unresolved reference: b (circular reference or undefined)", 1, 6],
+		["circular reference", "{ a: b, b: a }", "Circular reference: a -> b -> a", 1, 12],
 		[
 			"undefined reference on a later line",
 			"{\n  a: 1,\n  b: nope.c\n}",
