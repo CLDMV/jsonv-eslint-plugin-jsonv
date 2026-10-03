@@ -173,7 +173,7 @@ describe("parse() — AST shape", () => {
 			...at(1, 17, 1, 34, 16, 33),
 			quasis: [
 				{ type: "TemplateElement", tail: false, value: { raw: "`http://${", cooked: "http://" }, ...at(1, 17, 1, 27, 16, 26) },
-				{ type: "TemplateElement", tail: true, value: { raw: "/`", cooked: "/" }, ...at(1, 32, 1, 34, 31, 33) }
+				{ type: "TemplateElement", tail: true, value: { raw: "}/`", cooked: "/" }, ...at(1, 31, 1, 34, 30, 33) }
 			],
 			expressions: [{ type: "Identifier", name: "host", ...at(1, 27, 1, 31, 26, 30) }]
 		});

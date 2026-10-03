@@ -160,8 +160,10 @@ describe("parse() — malformed input", () => {
 		]);
 	});
 
-	// @cldmv/jsonv 1.1.0 throws a `JsonvReferenceError` for unresolved and circular internal
-	// references, positioned on the offending reference node (0-based column, like syntax errors).
+	// @cldmv/jsonv throws a `JsonvReferenceError` for unresolved and circular internal references,
+	// positioned on the offending reference node (0-based column, like syntax errors). Since 1.1.1
+	// a true cycle gets its own "Circular reference: a -> b -> a" message, pointing at the reference
+	// that closes the cycle rather than the first one in the chain.
 	it.each([
 		[
 			"undefined reference",
@@ -169,12 +171,7 @@ describe("parse() — malformed input", () => {
 			"Unresolved reference: missing (circular reference or undefined)",
 			{ line: 1, column: 6, endLine: 1, endColumn: 13 }
 		],
-		[
-			"circular reference",
-			"{ a: b, b: a }",
-			"Unresolved reference: b (circular reference or undefined)",
-			{ line: 1, column: 6, endLine: 1, endColumn: 7 }
-		],
+		["circular reference", "{ a: b, b: a }", "Circular reference: a -> b -> a", { line: 1, column: 12, endLine: 1, endColumn: 13 }],
 		[
 			"unresolved template interpolation",
 			"{\n  x: `${nope}`\n}",
