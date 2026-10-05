@@ -8,19 +8,17 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ## ✨ What's New
 
-### Latest: v1.0.13 (September 2026)
+### Latest: v1.0.16 (October 2026)
 
-- **Published types describe a real ESLint plugin** — `dist/index.d.mts` typed the default export as a bare `Object`; it now types the plugin, the `jsonv/jsonv` language, `JsonvSourceCode` and every AST node against `@eslint/core`'s generics, checked in CI by a new `test:types` script, alongside a declared `engines.node` and `eslint` peer range that finally match what the runtime dependencies require (#30, #37, fixes #28, #32).
-- **Three more language options** — `mode` (`"jsonv"`, `"json5"` or `"json"`), `strictOctal` and `allowInternalReferences` are now accepted, validated and forwarded to `@cldmv/jsonv`, matching what the README already documented (#39, fixes #34).
-- **CLDMV lint/format tooling** — `lint`, `lint:fix`, `format` and `format:check` scripts, a pre-commit hook and the org's shared ESLint/Prettier config land, and the repository is reformatted repo-wide (#38, fixes #33).
-- [View full v1.0.13 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.13.md)
+- **Header tooling on fix-headers 2.2.0** — the `@cldmv/fix-headers` dev dependency moves to 2.2.0, so `@Last modified by` follows content edits only, and `@cldmv/configs` moves to 1.2.4, which turns off the forced author updates. The header pass was re-run and every file already matched, so nothing was restamped. No plugin code, published file or runtime dependency changed (#54, #57).
+- [View full v1.0.16 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.16.md)
 
 ### Recent Releases
 
+- **v1.0.15** (October 2026) — tests updated for `@cldmv/jsonv` 1.1.1's diagnostics, dev-dependency bumps, and the CI `✅ Required PR Check` mirror runs on every path (#50, #51, #52) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.15.md))
+- **v1.0.14** (October 2026) — uniform file headers from the shared CLDMV fix-headers config, and a skipped PR run no longer satisfies Required PR Check (#47, #48) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.14.md))
+- **v1.0.13** (September 2026) — real published types for the plugin, language and AST, a declared Node/ESLint range, and the `mode`, `strictOctal` and `allowInternalReferences` language options (#30, #37, #39) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.13.md))
 - **v1.0.12** (September 2026) — the `jsonv/jsonv` language builds a real ESLint AST from `@cldmv/jsonv`'s `parseToAst()`, so rules can select nodes and inline `eslint-disable` comments work (#26) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.12.md))
-- **v1.0.11** (September 2026) — language options are validated, parse errors report at their real position, and the plugin gained a vitest suite with a CI coverage badge (#16, #17, #18, #23, #24) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.11.md))
-- **v1.0.10** (September 2026) — the README links back to the jsonv repo (#15) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.10.md))
-- **v1.0.9** (September 2026) — corrected package name, badge row and license badges (#12) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.9.md))
 
 📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
 

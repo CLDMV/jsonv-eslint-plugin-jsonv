@@ -1,6 +1,6 @@
 {
 	"name": "@cldmv/eslint-plugin-jsonv",
-	"version": "1.0.15",
+	"version": "1.0.16",
 	"description": "ESLint plugin for @cldmv/jsonv files",
 	"type": "module",
 	"main": "./dist/index.mjs",
@@ -40,8 +40,8 @@
 		"eslint": "^9.13.0 || ^10.0.0"
 	},
 	"devDependencies": {
-		"@cldmv/configs": "^1.2.0",
-		"@cldmv/fix-headers": "^2.1.1",
+		"@cldmv/configs": "^1.2.4",
+		"@cldmv/fix-headers": "^2.2.0",
 		"@cldmv/jsonv": "^1.1.0",
 		"@cldmv/prettier-plugin-jsonv": "^1.0.6",
 		"@cldmv/vitest-runner": "^1.4.3",
