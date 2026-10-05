@@ -10,7 +10,7 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ### Latest: v1.0.16 (October 2026)
 
-- **Header tooling on fix-headers 2.1.4** — the `@cldmv/fix-headers` dev dependency moves to 2.1.4 and the header pass was re-run; every file already matched, so nothing was restamped. No plugin code, published file or runtime dependency changed (#54).
+- **Header tooling on fix-headers 2.2.0** — the `@cldmv/fix-headers` dev dependency moves to 2.2.0, so `@Last modified by` follows content edits only, and `@cldmv/configs` moves to 1.2.4, which turns off the forced author updates. The header pass was re-run and every file already matched, so nothing was restamped. No plugin code, published file or runtime dependency changed (#54, #57).
 - [View full v1.0.16 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.16.md)
 
 ### Recent Releases
