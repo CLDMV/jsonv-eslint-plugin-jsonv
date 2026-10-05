@@ -40,7 +40,7 @@
 		"eslint": "^9.13.0 || ^10.0.0"
 	},
 	"devDependencies": {
-		"@cldmv/configs": "^1.2.0",
+		"@cldmv/configs": "^1.2.4",
 		"@cldmv/fix-headers": "^2.2.0",
 		"@cldmv/jsonv": "^1.1.0",
 		"@cldmv/prettier-plugin-jsonv": "^1.0.6",
