@@ -3,28 +3,36 @@
 	"version": "1.0.18",
 	"description": "ESLint plugin for @cldmv/jsonv files",
 	"type": "module",
-	"main": "./dist/index.mjs",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
+			"eslint-plugin-jsonv-dev": {
+				"import": "./src/index.mjs",
+				"require": "./src/index.cjs"
+			},
 			"types": "./dist/index.d.mts",
-			"import": "./dist/index.mjs"
-		}
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
+		},
+		"./package.json": "./package.json"
 	},
 	"scripts": {
-		"build": "npm run build:js && npm run build:types",
-		"build:ci": "npm run lint --if-present && npm run format:check --if-present && npm run build && npm run test:types",
-		"build:js": "node scripts/build.mjs",
+		"build": "tsup && npm run build:types",
+		"build:ci": "npm run lint && npm run format:check && npm run build && npm run test:types",
 		"build:types": "tsc -p .configs/tsconfig.types.json",
-		"test": "node tests/run-vitest.mjs",
+		"test": "node tests/run-vitest.mjs && npm run test:dist",
+		"test:dist": "npm run build && node --conditions=eslint-plugin-jsonv-dev --test tests/cjs/entry.test.cjs",
 		"test:watch": "vitest --config .configs/vitest.config.mjs",
 		"test:types": "npm run build:types && tsc -p tests/types/tsconfig.json",
 		"coverage": "node tests/run-vitest.mjs --coverage-quiet",
-		"ci:coverage": "npm run coverage",
+		"ci:coverage": "npm run coverage && npm run test:dist",
 		"lint": "eslint --config .configs/eslint.config.mjs .",
 		"lint:fix": "eslint --config .configs/eslint.config.mjs . --fix",
 		"format": "prettier --config .configs/.prettierrc --write .",
 		"format:check": "prettier --config .configs/.prettierrc --check .",
+		"prepack": "npm run build",
 		"prepare": "node -e \"import('./.githooks/install.mjs').catch(()=>{})\"",
 		"fix:headers": "fix-headers --config .configs/fix-headers.json"
 	},
@@ -33,6 +41,7 @@
 	},
 	"files": [
 		"dist/**",
+		"!dist/**/*.map",
 		"README.md"
 	],
 	"peerDependencies": {
@@ -54,6 +63,7 @@
 		"eslint": "^10.11.0",
 		"globals": "^17.12.0",
 		"prettier": "^3.9.9",
+		"tsup": "^9.0.0",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.2"
 	},

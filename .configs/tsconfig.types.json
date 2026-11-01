@@ -5,7 +5,7 @@
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"declarationMap": true,
-		"rootDir": "..",
+		"rootDir": "../src",
 		"outDir": "../dist",
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
@@ -17,6 +17,6 @@
 		"strict": true,
 		"types": ["node"]
 	},
-	"include": ["../index.mjs"],
+	"include": ["../src/index.mjs"],
 	"exclude": ["../node_modules", "../dist", "../types", "../tests"]
 }

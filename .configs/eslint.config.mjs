@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-10-02T12:15:37-07:00 (1790968537)
+ *	@Last modified time: 2026-11-01T12:07:48-08:00 (1793563668)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -18,8 +18,8 @@ import globals from "globals";
 import json from "@eslint/json";
 // This repo IS @cldmv/eslint-plugin-jsonv, so *.jsonv files are linted with the
 // local plugin source rather than the published package: the plugin dogfoods
-// itself, and a change to index.mjs is exercised by `npm run lint` immediately.
-import jsonvPlugin from "../index.mjs";
+// itself, and a change to src/index.mjs is exercised by `npm run lint` immediately.
+import jsonvPlugin from "../src/index.mjs";
 import markdown from "@eslint/markdown";
 import css from "@eslint/css";
 import { defineConfig } from "eslint/config";

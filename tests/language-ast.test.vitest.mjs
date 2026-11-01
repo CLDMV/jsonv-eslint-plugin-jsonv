@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-10-02T12:15:40-07:00 (1790968540)
+ *	@Last modified time: 2026-11-01T12:07:54-08:00 (1793563674)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -19,7 +19,7 @@
  * `visitorKeys` (issue #19 — the language used to return an empty Program).
  */
 import { describe, expect, it } from "vitest";
-import plugin from "../index.mjs";
+import plugin from "../src/index.mjs";
 
 const language = plugin.languages.jsonv;
 
