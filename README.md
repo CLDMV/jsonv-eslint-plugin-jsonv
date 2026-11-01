@@ -38,7 +38,7 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 npm install --save-dev @cldmv/eslint-plugin-jsonv
 ```
 
-**Requirements:** Node `^20.19.0 || ^22.13.0 || >=24` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
+**Requirements:** Node `>=22.22.0` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
 
 **Note:** This plugin requires `@cldmv/jsonv` as a peer dependency.
 
@@ -48,7 +48,7 @@ npm install @cldmv/jsonv
 
 ## Building the Plugin
 
-If you're developing the plugin:
+The source lives in `src/`: `src/index.mjs` is the plugin and `src/index.cjs` is the CommonJS entry. To build it:
 
 ```bash
 npm install
@@ -57,9 +57,23 @@ npm run build
 
 This will:
 
-1. Copy `index.mjs` into `dist/index.mjs`
-2. Generate type definitions into `dist/index.d.mts`
-3. Prepare the plugin for use
+1. Bundle `src/index.mjs` into `dist/index.mjs` with tsup
+2. Copy `src/index.cjs` unchanged to `dist/index.cjs`
+3. Generate type definitions into `dist/index.d.mts`
+
+`dist/` is not committed; `npm pack` and `npm publish` rebuild it.
+
+### Running from source
+
+The package's `"."` export has an `eslint-plugin-jsonv-dev` condition that points at `src/` instead of `dist/`. In a checkout, `import` or `require` of `@cldmv/eslint-plugin-jsonv` loads `dist/` (so build first) unless the condition is set:
+
+```bash
+node --conditions=eslint-plugin-jsonv-dev app.mjs
+# or once per shell
+export NODE_OPTIONS=--conditions=eslint-plugin-jsonv-dev
+```
+
+The test suite sets the condition itself, so `npm test` runs against `src/`, then `npm run test:dist` builds and checks `dist/`.
 
 ## Usage
 
@@ -69,6 +83,23 @@ This will:
 import jsonv from "@cldmv/eslint-plugin-jsonv";
 
 export default [
+	{
+		files: ["**/*.jsonv"],
+		plugins: { jsonv },
+		language: "jsonv/jsonv",
+		extends: ["jsonv/recommended"]
+	}
+];
+```
+
+### ESLint Flat Config (eslint.config.cjs)
+
+The package also has a CommonJS entry, so a CommonJS config can `require()` it. `require()` returns the plugin object itself, the same object as the ESM default export. This needs a Node.js release with `require(esm)` support (`>=22.22.0`), which the supported Node range already guarantees.
+
+```javascript
+const jsonv = require("@cldmv/eslint-plugin-jsonv");
+
+module.exports = [
 	{
 		files: ["**/*.jsonv"],
 		plugins: { jsonv },

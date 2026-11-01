@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-10-02T12:15:40-07:00 (1790968540)
+ *	@Last modified time: 2026-11-01T12:07:55-08:00 (1793563675)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -22,7 +22,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import plugin from "../index.mjs";
+import plugin from "../src/index.mjs";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
@@ -160,17 +160,16 @@ describe("meta resolution from a built dist/ copy", () => {
 		while (created.length) rmSync(created.pop(), { recursive: true, force: true });
 	});
 
-	it("reads name/version from the package.json one level up, the layout scripts/build.mjs produces", async () => {
-		// Mirrors the real publish layout: <pkg root>/package.json + <pkg root>/dist/index.mjs,
-		// where index.mjs is copied verbatim (scripts/build.mjs does exactly this) — so the
-		// co-located "./package.json" lookup misses and the "../package.json" fallback is used.
+	it("reads name/version from the package.json one level up, the layout of src/ and dist/", async () => {
+		// Mirrors the real layout: <pkg root>/package.json + <pkg root>/dist/index.mjs (or src/index.mjs),
+		// so the plugin finds its package.json one directory up, wherever the package root is.
 		mkdirSync(tmpRoot, { recursive: true });
 		const pkgRoot = mkdtempSync(path.join(tmpRoot, "plugin-meta-test-"));
 		created.push(pkgRoot);
 
 		writeFileSync(path.join(pkgRoot, "package.json"), JSON.stringify({ name: "@cldmv/eslint-plugin-jsonv-sentinel", version: "9.9.9" }));
 		mkdirSync(path.join(pkgRoot, "dist"), { recursive: true });
-		writeFileSync(path.join(pkgRoot, "dist", "index.mjs"), readFileSync(path.join(root, "index.mjs"), "utf8"));
+		writeFileSync(path.join(pkgRoot, "dist", "index.mjs"), readFileSync(path.join(root, "src", "index.mjs"), "utf8"));
 
 		expect(existsSync(path.join(pkgRoot, "dist", "package.json"))).toBe(false);
 
