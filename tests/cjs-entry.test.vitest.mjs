@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-11-01T12:07:54-08:00 (1793563674)
+ *	@Last modified time: 2026-11-01T13:19:27-08:00 (1793567967)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -53,6 +53,6 @@ describe("src/index.cjs", () => {
 		expect(result.status, result.stderr).toBe(0);
 		const { code, message } = JSON.parse(result.stdout);
 		expect(code).toBe("ERR_REQUIRE_ESM");
-		expect(message).toContain("@cldmv/eslint-plugin-jsonv: require() needs Node.js ^20.19.0 or >=22.13.0");
+		expect(message).toContain("@cldmv/eslint-plugin-jsonv: require() needs Node.js >=22.22.0");
 	});
 });

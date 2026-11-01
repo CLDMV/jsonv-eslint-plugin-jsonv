@@ -108,7 +108,7 @@
 	},
 	"homepage": "https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/#readme",
 	"engines": {
-		"node": "^20.19.0 || ^22.13.0 || >=24"
+		"node": ">=22.22.0"
 	},
 	"dependencies": {
 		"@eslint/core": "^1.2.1",
