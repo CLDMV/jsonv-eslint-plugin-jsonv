@@ -38,7 +38,9 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 npm install --save-dev @cldmv/eslint-plugin-jsonv
 ```
 
-**Requirements:** Node `>=22.22.0` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
+**Requirements:** Node `^20.19.0 || ^22.13.0 || >=24` (the range the plugin's `@eslint/core` and `@eslint/plugin-kit` dependencies support) and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`). `require()` needs Node.js ^20.19.0 or >=22.13.0, which that range already covers.
+
+Developing this package needs Node.js 22.22.0 or later (`devEngines`).
 
 **Note:** This plugin requires `@cldmv/jsonv` as a peer dependency.
 
@@ -94,7 +96,7 @@ export default [
 
 ### ESLint Flat Config (eslint.config.cjs)
 
-The package also has a CommonJS entry, so a CommonJS config can `require()` it. `require()` returns the plugin object itself, the same object as the ESM default export. This needs a Node.js release with `require(esm)` support (`>=22.22.0`), which the supported Node range already guarantees.
+The package also has a CommonJS entry, so a CommonJS config can `require()` it. `require()` returns the plugin object itself, the same object as the ESM default export. This needs a Node.js release with `require(esm)` support (^20.19.0 or >=22.13.0), which the supported Node range already guarantees.
 
 ```javascript
 const jsonv = require("@cldmv/eslint-plugin-jsonv");
