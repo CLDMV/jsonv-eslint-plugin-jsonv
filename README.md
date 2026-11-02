@@ -8,18 +8,17 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ## ✨ What's New
 
-### Latest: v1.1.0 (November 2026)
+### Latest: v1.1.1 (November 2026)
 
-- **CommonJS entry and CLDMV library layout** — the plugin moves into `src/`, is built with tsup, and gains a `require()` entry, so an `eslint.config.cjs` can `require("@cldmv/eslint-plugin-jsonv")` and get the same plugin object as `import`. An `eslint-plugin-jsonv-dev` export condition runs a checkout from `src/`. No rule, language or option changed (#82, #83).
-- **Node.js 22.22.0 or later is now required** — narrowed from `^20.19.0 || ^22.13.0 || >=24`.
-- [View full v1.1.0 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.0.md)
+- **`engines.node` back to the runtime range** — v1.1.0 declared `>=22.22.0`, the dev toolchain floor. `engines.node` is `^20.19.0 || ^22.13.0 || >=24` again, matching the plugin's runtime dependencies, so Node.js 20.19+ and 22.13+ install it without an `EBADENGINE` warning. The 22.22.0 development floor now lives in `devEngines`. No rule, language or option changed (#88).
+- [View full v1.1.1 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.1.md)
 
 ### Recent Releases
 
+- **v1.1.0** (November 2026) — plugin moved into `src/`, built with tsup, with a `require()` entry and an `eslint-plugin-jsonv-dev` export condition; `engines.node` narrowed to `>=22.22.0` (#82, #83) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.0.md))
 - **v1.0.17** (October 2026) — development dependencies only: `eslint` 10.12.0, vitest 5.0.3 and `@cldmv/vitest-runner` 1.5.3; no plugin code changed (#59, #60, #62, #64) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.17.md))
 - **v1.0.16** (October 2026) — header tooling on `@cldmv/fix-headers` 2.2.0 and `@cldmv/configs` 1.2.4; no plugin code or runtime dependency changed (#54, #57) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.16.md))
 - **v1.0.15** (October 2026) — tests updated for `@cldmv/jsonv` 1.1.1's diagnostics, dev-dependency bumps, and the CI `✅ Required PR Check` mirror runs on every path (#50, #51, #52) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.15.md))
-- **v1.0.14** (October 2026) — uniform file headers from the shared CLDMV fix-headers config, and a skipped PR run no longer satisfies Required PR Check (#47, #48) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.14.md))
 
 📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
 
