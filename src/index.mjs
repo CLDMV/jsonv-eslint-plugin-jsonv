@@ -1,13 +1,13 @@
 /**
  *
  *	@Project: @cldmv/eslint-plugin-jsonv
- *	@Filename: /index.mjs
+ *	@Filename: /src/index.mjs
  *	@Date: 2026-01-18T20:55:56-08:00 (1768798556)
  *	@Author: Nate Corcoran <CLDMV>
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-10-02T12:15:39-07:00 (1790968539)
+ *	@Last modified time: 2026-11-01T12:07:54-08:00 (1793563674)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -34,7 +34,8 @@
  *
  * @example
  * // In eslint.config.mjs
- * import jsonv from 'eslint-plugin-jsonv';
+ * import jsonv from "@cldmv/eslint-plugin-jsonv";
+ * // or, in eslint.config.cjs: const jsonv = require("@cldmv/eslint-plugin-jsonv");
  *
  * export default [
  *   {
@@ -49,7 +50,6 @@
 import { JsonvReferenceError, JsonvSyntaxError, parseToAst, parseWithOptions } from "@cldmv/jsonv/parser";
 import { ConfigCommentParser, Directive, TextSourceCodeBase, VisitNodeStep } from "@eslint/plugin-kit";
 
-import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -305,10 +305,9 @@ import { fileURLToPath } from "node:url";
 /**
  * Reads this package's own `name` and `version` from its `package.json`.
  *
- * `scripts/build.mjs` copies this file verbatim into `dist/index.mjs` — one directory
- * deeper than the source file — so `package.json` sits alongside the source copy but
- * one level up from the built copy. Check the co-located path first and fall back to
- * the parent directory so this resolves correctly from either location.
+ * The source (`src/index.mjs`) and the tsup bundle (`dist/index.mjs`) both sit one
+ * directory below the package root, so `package.json` is always one level up from this
+ * file, in a checkout and in the published package.
  *
  * @public
  * @returns {{name: string, version: string}} The package's `name` and `version`.
@@ -316,9 +315,7 @@ import { fileURLToPath } from "node:url";
  * const { name, version } = readPackageMeta();
  */
 function readPackageMeta() {
-	const here = dirname(fileURLToPath(import.meta.url));
-	const localPath = join(here, "package.json");
-	const pkgPath = existsSync(localPath) ? localPath : join(here, "..", "package.json");
+	const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
 	const require = createRequire(import.meta.url);
 	const { name, version } = require(pkgPath);
 	return { name, version };

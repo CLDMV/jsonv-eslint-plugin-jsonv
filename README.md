@@ -8,18 +8,18 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ## ✨ What's New
 
-### Latest: v1.0.17 (October 2026)
+### Latest: v1.1.0 (November 2026)
 
-- **Development dependencies only** — `eslint` 10.12.0, `globals` 17.13.0, vitest 5.0.3, `@cldmv/vitest-runner` 1.5.3, `@cldmv/jsonv` and `@cldmv/prettier-plugin-jsonv` 1.1.3, and `@types/node` 26.6.4, all lockfile-only moves within the existing ranges. No plugin code, published file or declared range changed (#59, #60, #62, #64).
-- **Test runner now declares Node.js 22.12 or newer** — `@cldmv/vitest-runner` 1.5.3 raises its minimum from 20.19 and brings `chalk` 6. The plugin's own `engines` range for consumers is unchanged.
-- [View full v1.0.17 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.17.md)
+- **CommonJS entry and CLDMV library layout** — the plugin moves into `src/`, is built with tsup, and gains a `require()` entry, so an `eslint.config.cjs` can `require("@cldmv/eslint-plugin-jsonv")` and get the same plugin object as `import`. An `eslint-plugin-jsonv-dev` export condition runs a checkout from `src/`. No rule, language or option changed (#82, #83).
+- **Node.js 22.22.0 or later is now required** — narrowed from `^20.19.0 || ^22.13.0 || >=24`.
+- [View full v1.1.0 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.0.md)
 
 ### Recent Releases
 
+- **v1.0.17** (October 2026) — development dependencies only: `eslint` 10.12.0, vitest 5.0.3 and `@cldmv/vitest-runner` 1.5.3; no plugin code changed (#59, #60, #62, #64) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.17.md))
 - **v1.0.16** (October 2026) — header tooling on `@cldmv/fix-headers` 2.2.0 and `@cldmv/configs` 1.2.4; no plugin code or runtime dependency changed (#54, #57) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.16.md))
 - **v1.0.15** (October 2026) — tests updated for `@cldmv/jsonv` 1.1.1's diagnostics, dev-dependency bumps, and the CI `✅ Required PR Check` mirror runs on every path (#50, #51, #52) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.15.md))
 - **v1.0.14** (October 2026) — uniform file headers from the shared CLDMV fix-headers config, and a skipped PR run no longer satisfies Required PR Check (#47, #48) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.14.md))
-- **v1.0.13** (September 2026) — real published types for the plugin, language and AST, a declared Node/ESLint range, and the `mode`, `strictOctal` and `allowInternalReferences` language options (#30, #37, #39) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.13.md))
 
 📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
 
@@ -38,7 +38,7 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 npm install --save-dev @cldmv/eslint-plugin-jsonv
 ```
 
-**Requirements:** Node `^20.19.0 || ^22.13.0 || >=24` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
+**Requirements:** Node `>=22.22.0` and ESLint `^9.13.0 || ^10.0.0` (the first ESLint release with `defaultLanguageOptions` support for plugin `languages`; the plugin's `@eslint/plugin-kit` and `@eslint/core` dependencies also need that Node floor).
 
 **Note:** This plugin requires `@cldmv/jsonv` as a peer dependency.
 
@@ -48,7 +48,7 @@ npm install @cldmv/jsonv
 
 ## Building the Plugin
 
-If you're developing the plugin:
+The source lives in `src/`: `src/index.mjs` is the plugin and `src/index.cjs` is the CommonJS entry. To build it:
 
 ```bash
 npm install
@@ -57,9 +57,23 @@ npm run build
 
 This will:
 
-1. Copy `index.mjs` into `dist/index.mjs`
-2. Generate type definitions into `dist/index.d.mts`
-3. Prepare the plugin for use
+1. Bundle `src/index.mjs` into `dist/index.mjs` with tsup
+2. Copy `src/index.cjs` unchanged to `dist/index.cjs`
+3. Generate type definitions into `dist/index.d.mts`
+
+`dist/` is not committed; `npm pack` and `npm publish` rebuild it.
+
+### Running from source
+
+The package's `"."` export has an `eslint-plugin-jsonv-dev` condition that points at `src/` instead of `dist/`. In a checkout, `import` or `require` of `@cldmv/eslint-plugin-jsonv` loads `dist/` (so build first) unless the condition is set:
+
+```bash
+node --conditions=eslint-plugin-jsonv-dev app.mjs
+# or once per shell
+export NODE_OPTIONS=--conditions=eslint-plugin-jsonv-dev
+```
+
+The test suite sets the condition itself, so `npm test` runs against `src/`, then `npm run test:dist` builds and checks `dist/`.
 
 ## Usage
 
@@ -69,6 +83,23 @@ This will:
 import jsonv from "@cldmv/eslint-plugin-jsonv";
 
 export default [
+	{
+		files: ["**/*.jsonv"],
+		plugins: { jsonv },
+		language: "jsonv/jsonv",
+		extends: ["jsonv/recommended"]
+	}
+];
+```
+
+### ESLint Flat Config (eslint.config.cjs)
+
+The package also has a CommonJS entry, so a CommonJS config can `require()` it. `require()` returns the plugin object itself, the same object as the ESM default export. This needs a Node.js release with `require(esm)` support (`>=22.22.0`), which the supported Node range already guarantees.
+
+```javascript
+const jsonv = require("@cldmv/eslint-plugin-jsonv");
+
+module.exports = [
 	{
 		files: ["**/*.jsonv"],
 		plugins: { jsonv },
