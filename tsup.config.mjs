@@ -22,7 +22,7 @@
  *    and never transformed by esbuild. It `require()`s ./index.mjs, which Node loads synchronously
  *    because the module graph has no top-level await.
  *
- * `dist/index.d.mts` is generated afterwards by `npm run build:types`. Sourcemaps are generated for
+ * `dist/index.d.mts` is generated afterwards by `npm run types:build`. Sourcemaps are generated for
  * local debugging but excluded from the published tarball via package.json's `files` negation entry.
  */
 import { copyFileSync } from "node:fs";
