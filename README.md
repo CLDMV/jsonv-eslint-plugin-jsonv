@@ -74,7 +74,7 @@ node --conditions=eslint-plugin-jsonv-dev app.mjs
 export NODE_OPTIONS=--conditions=eslint-plugin-jsonv-dev
 ```
 
-The test suite sets the condition itself, so `npm test` runs against `src/`, then `npm run test:cjs` builds and checks `dist/`.
+The test suite sets the condition itself, so `npm test` runs against `src/`, then `npm run test:cjs` builds and checks `dist/`. `npm run test:dist` builds and runs the Vitest suite against `dist/` instead.
 
 ## Usage
 
