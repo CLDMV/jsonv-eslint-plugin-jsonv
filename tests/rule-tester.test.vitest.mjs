@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-11-01T12:07:55-08:00 (1793563675)
+ *	@Last modified time: 2026-11-07T22:16:59-08:00 (1794118619)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -21,7 +21,7 @@
  */
 import { describe, it } from "vitest";
 import { RuleTester } from "eslint";
-import plugin from "../src/index.mjs";
+import plugin from "@cldmv/eslint-plugin-jsonv";
 import { maxLines, noTodo, noTodoValue } from "./fixtures/rules.mjs";
 
 RuleTester.describe = describe;

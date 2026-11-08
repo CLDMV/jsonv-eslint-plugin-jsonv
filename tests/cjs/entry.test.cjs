@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-11-01T12:07:54-08:00 (1793563674)
+ *	@Last modified time: 2026-11-07T20:58:02-08:00 (1794113882)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -16,7 +16,7 @@
 /**
  * @fileoverview Checks the built dist/ output: `require()` of dist/index.cjs returns the same
  * plugin object as the ESM default export of dist/index.mjs, and that object works with ESLint.
- * Run after `npm run build` (see `test:dist`).
+ * Run after `npm run build` (see `test:cjs`).
  */
 "use strict";
 
