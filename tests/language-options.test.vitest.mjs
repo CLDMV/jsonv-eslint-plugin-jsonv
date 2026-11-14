@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-11-01T12:07:54-08:00 (1793563674)
+ *	@Last modified time: 2026-11-07T22:16:57-08:00 (1794118617)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -32,7 +32,7 @@ vi.mock("@cldmv/jsonv/parser", async (importOriginal) => {
 });
 
 const { parseToAst, parseWithOptions } = await import("@cldmv/jsonv/parser");
-const { default: plugin } = await import("../src/index.mjs");
+const { default: plugin } = await import("@cldmv/eslint-plugin-jsonv");
 
 const { parse } = plugin.languages.jsonv;
 const defaults = { year: 2025, mode: "jsonv", strictBigInt: false, strictOctal: false, allowInternalReferences: true };
