@@ -40,6 +40,27 @@ test("dist/index.cjs is a verbatim copy of src/index.cjs, not a bundle", () => {
 	assert.equal(fs.readFileSync(path.join(dist, "index.cjs"), "utf8"), fs.readFileSync(path.join(root, "src/index.cjs"), "utf8"));
 });
 
+test("dist/ has one file per src/ module, not a bundle", () => {
+	const built = fs
+		.readdirSync(dist)
+		.filter((name) => name.endsWith(".mjs"))
+		.sort();
+	const sources = fs
+		.readdirSync(path.join(root, "src"))
+		.filter((name) => name.endsWith(".mjs"))
+		.sort();
+	assert.deepEqual(built, sources);
+	assert.ok(!fs.readFileSync(path.join(dist, "index.mjs"), "utf8").includes("class JsonvSourceCode"));
+});
+
+test("the ./source-code subpath resolves to dist/ without the dev condition", () => {
+	const { spawnSync } = require("node:child_process");
+	const probe = 'console.log(require.resolve("@cldmv/eslint-plugin-jsonv/source-code"))';
+	const plain = spawnSync(process.execPath, ["-e", probe], { cwd: root, encoding: "utf8" });
+	assert.equal(plain.status, 0, plain.stderr);
+	assert.equal(plain.stdout.trim(), path.join(dist, "source-code.mjs"));
+});
+
 test("the built plugin reads its meta from the package root", () => {
 	const pkg = require(path.join(root, "package.json"));
 	assert.deepEqual(require(path.join(dist, "index.cjs")).meta, { name: pkg.name, version: pkg.version });

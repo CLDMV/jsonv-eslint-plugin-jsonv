@@ -16,6 +16,11 @@
 			"import": "./dist/index.mjs",
 			"require": "./dist/index.cjs"
 		},
+		"./source-code": {
+			"eslint-plugin-jsonv-dev": "./src/source-code.mjs",
+			"types": "./dist/source-code.d.mts",
+			"default": "./dist/source-code.mjs"
+		},
 		"./package.json": "./package.json"
 	},
 	"scripts": {

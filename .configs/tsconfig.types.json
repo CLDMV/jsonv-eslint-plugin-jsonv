@@ -17,6 +17,6 @@
 		"strict": true,
 		"types": ["node"]
 	},
-	"include": ["../src/index.mjs"],
+	"include": ["../src/*.mjs"],
 	"exclude": ["../node_modules", "../dist", "../types", "../tests"]
 }

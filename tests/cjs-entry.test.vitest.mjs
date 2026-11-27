@@ -36,6 +36,16 @@ describe("src/index.cjs", () => {
 		expect(cjs).toBe(require(path.join(root, "src", "index.mjs")).default);
 		expect(Object.keys(cjs).sort()).toEqual(Object.keys(plugin).sort());
 		expect(cjs.meta).toEqual(plugin.meta);
+		expect(Object.keys(cjs).sort()).toEqual(["configs", "languages", "meta", "rules"]);
+	});
+
+	it("lints through a flat config that puts require() under plugins", async () => {
+		const { Linter } = await import("eslint");
+		const jsonv = require(cjsEntry);
+		const config = [{ files: ["**/*.jsonv"], plugins: { jsonv }, language: "jsonv/jsonv" }];
+		const linter = new Linter({ configType: "flat" });
+		expect(linter.verify("{ a: 1, b: a }", config, "x.jsonv")).toEqual([]);
+		expect(linter.verify("{ a: }", config, "x.jsonv")[0]?.fatal).toBe(true);
 	});
 
 	it("is what the package name resolves to for require() under the dev condition", () => {

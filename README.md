@@ -110,6 +110,16 @@ module.exports = [
 ];
 ```
 
+### `JsonvSourceCode` for rule authors
+
+The package root exports only the plugin. The `SourceCode` class the language hands to rules (`context.sourceCode`) is on its own subpath, for `instanceof` checks and type annotations:
+
+```javascript
+import { JsonvSourceCode } from "@cldmv/eslint-plugin-jsonv/source-code";
+```
+
+Before v2.0.0 it was a named export of the package root.
+
 ### Configuration Options
 
 `languageOptions` are passed to the `@cldmv/jsonv` parser (both `parseWithOptions()`, which reports errors, and `parseToAst()`, which builds the AST rules see). Every option is optional; the values below are the defaults:

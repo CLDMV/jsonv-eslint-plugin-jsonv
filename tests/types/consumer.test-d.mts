@@ -4,7 +4,8 @@
  * and uses them the way an `eslint.config.mts` and a custom rule would. It is compiled with
  * `tsc --noEmit` by `npm run test:types`; every `@ts-expect-error` must still see an error.
  */
-import jsonv, { JsonvSourceCode } from "@cldmv/eslint-plugin-jsonv";
+import jsonv from "@cldmv/eslint-plugin-jsonv";
+import { JsonvSourceCode } from "@cldmv/eslint-plugin-jsonv/source-code";
 import type {
 	JsonvComment,
 	JsonvIdentifier,
@@ -22,6 +23,8 @@ import type {
 	JsonvToken
 } from "@cldmv/eslint-plugin-jsonv";
 import type { File, Plugin, SourceLocation, SourceRange } from "@eslint/core";
+// @ts-expect-error JsonvSourceCode moved to the ./source-code subpath in v2; the package root exports only the plugin.
+import { JsonvSourceCode as RootSourceCode } from "@cldmv/eslint-plugin-jsonv";
 import type { ESLint, Linter } from "eslint";
 import { defineConfig } from "eslint/config";
 

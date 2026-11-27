@@ -16,20 +16,23 @@
 /**
  * @fileoverview Bundler config: produces the published dist/ output from src/.
  *
- *  - dist/index.mjs: tsup bundle of src/index.mjs (minified, names kept). Runtime dependencies
- *    (`@eslint/core`, `@eslint/plugin-kit`) and the `@cldmv/jsonv` / `eslint` peers stay external.
+ *  - dist/*.mjs: one file per src/*.mjs module (`bundle: false`), each minified in place with
+ *    names kept. Nothing is merged or duplicated, so `JsonvSourceCode` is the same class whether
+ *    it comes from the package root's language or from the `./source-code` subpath, and imports
+ *    of dependencies and peers stay as written.
  *  - dist/index.cjs: the hand-written CJS entry src/index.cjs, copied verbatim by onSuccess below
  *    and never transformed by esbuild. It `require()`s ./index.mjs, which Node loads synchronously
  *    because the module graph has no top-level await.
  *
- * `dist/index.d.mts` is generated afterwards by `npm run types:build`. Sourcemaps are generated for
+ * The `dist/*.d.mts` declarations are generated afterwards by `npm run types:build`. Sourcemaps are generated for
  * local debugging but excluded from the published tarball via package.json's `files` negation entry.
  */
 import { copyFileSync } from "node:fs";
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-	entry: { index: "src/index.mjs" },
+	entry: ["src/*.mjs"],
+	bundle: false,
 	format: ["esm"],
 	outDir: "dist",
 	target: "node20",
@@ -41,7 +44,6 @@ export default defineConfig({
 	keepNames: true,
 	removeNodeProtocol: false,
 	clean: true,
-	external: ["@eslint/core", "@eslint/plugin-kit", "@cldmv/jsonv", "eslint"],
 	outExtension() {
 		return { js: ".mjs" };
 	},
