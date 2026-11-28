@@ -19,11 +19,29 @@
  */
 import { describe, it, expect } from "vitest";
 import * as pkg from "@cldmv/eslint-plugin-jsonv";
+import * as sourceCodePkg from "@cldmv/eslint-plugin-jsonv/source-code";
 
 describe("the @cldmv/eslint-plugin-jsonv import", () => {
 	it(`resolves to ${import.meta.env.MODE === "dist" ? "dist/" : "src/"}`, async () => {
 		const expected = import.meta.env.MODE === "dist" ? await import("../dist/index.mjs") : await import("../src/index.mjs");
 		expect(pkg.default).toBe(expected.default);
-		expect(pkg.JsonvSourceCode).toBe(expected.JsonvSourceCode);
+	});
+
+	it("exports only the plugin from the package root", () => {
+		expect(Object.keys(pkg)).toEqual(["default"]);
+	});
+
+	it(`resolves the ./source-code subpath to ${import.meta.env.MODE === "dist" ? "dist/" : "src/"}`, async () => {
+		const expected = import.meta.env.MODE === "dist" ? await import("../dist/source-code.mjs") : await import("../src/source-code.mjs");
+		expect(Object.keys(sourceCodePkg)).toEqual(["JsonvSourceCode"]);
+		expect(sourceCodePkg.JsonvSourceCode).toBe(expected.JsonvSourceCode);
+	});
+
+	it("builds the language's SourceCode from the same class the subpath exports", () => {
+		const language = pkg.default.languages.jsonv;
+		const file = { body: "{ a: 1 }" };
+		const result = language.parse(file, {});
+		expect(result.ok).toBe(true);
+		expect(language.createSourceCode(file, result, {})).toBeInstanceOf(sourceCodePkg.JsonvSourceCode);
 	});
 });

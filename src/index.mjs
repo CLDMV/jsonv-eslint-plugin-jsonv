@@ -48,7 +48,9 @@
  */
 
 import { JsonvReferenceError, JsonvSyntaxError, parseToAst, parseWithOptions } from "@cldmv/jsonv/parser";
-import { ConfigCommentParser, Directive, TextSourceCodeBase, VisitNodeStep } from "@eslint/plugin-kit";
+
+import { JsonvSourceCode } from "./source-code.mjs";
+import { VISITOR_KEYS, getChildKeys } from "./visitor-keys.mjs";
 
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
@@ -65,7 +67,7 @@ import { fileURLToPath } from "node:url";
 
 /**
  * @import { ConfigObject, File, FileError, FileProblem, Language, OkParseResult, ParseResult, Plugin, RulesConfig, RuleVisitor, SourceLocation, SourceRange } from "@eslint/core";
- * @import { CustomRuleDefinitionType, CustomRuleTypeDefinitions, CustomRuleVisitorWithExit, DirectiveType } from "@eslint/plugin-kit";
+ * @import { CustomRuleDefinitionType, CustomRuleTypeDefinitions, CustomRuleVisitorWithExit } from "@eslint/plugin-kit";
  * @import { AstResult, SourceLocation as JsonvParserLocation, TokenType } from "@cldmv/jsonv/parser";
  */
 
@@ -386,99 +388,6 @@ const VALID_MODES = new Set(["jsonv", "json5", "json"]);
 const BOOLEAN_LANGUAGE_OPTIONS = Object.freeze(["strictBigInt", "strictOctal", "allowInternalReferences"]);
 
 /**
- * Child keys of every node type in the AST `jsonvLanguage#parse` produces, in source order
- * where that is defined. The node types and their shapes come from @cldmv/jsonv's own AST
- * (`@cldmv/jsonv/parser`'s `Program`/`Expression` types); the plugin only re-positions them.
- *
- * - `Program` — the document; `body` is the single root value.
- * - `ObjectExpression` — `{ ... }`, with `properties` (`Property` nodes).
- * - `Property` — `key: value`; `key` is a `Literal` (quoted or numeric key) or an `Identifier` (unquoted key).
- * - `ArrayExpression` — `[ ... ]`, with `elements`.
- * - `Literal` — string, number, BigInt, boolean, null, `Infinity`, `NaN` (`raw` holds the source text).
- * - `Identifier` — an unquoted key, or an internal reference such as `backup: port`.
- * - `MemberExpression` — a dotted internal reference such as `server.port`.
- * - `TemplateLiteral` / `TemplateElement` — backtick strings and their `${...}` interpolations.
- *
- * @public
- * @type {Readonly<Record<string, ReadonlyArray<string>>>}
- */
-const VISITOR_KEYS = Object.freeze({
-	Program: Object.freeze(["body"]),
-	ObjectExpression: Object.freeze(["properties"]),
-	Property: Object.freeze(["key", "value"]),
-	ArrayExpression: Object.freeze(["elements"]),
-	Literal: Object.freeze([]),
-	Identifier: Object.freeze([]),
-	MemberExpression: Object.freeze(["object", "property"]),
-	TemplateLiteral: Object.freeze(["quasis", "expressions"]),
-	TemplateElement: Object.freeze([])
-});
-
-/**
- * Line terminators, matching how @cldmv/jsonv advances its line counter (`\r\n` as one
- * break, plus lone `\r`, `\n`, U+2028 and U+2029), so `sourceCode.lines` and
- * `getLocFromIndex()` agree with the node positions.
- *
- * @public
- * @type {RegExp}
- */
-const LINE_ENDING_PATTERN = /\r\n|[\r\n\u2028\u2029]/u;
-
-/**
- * Matches the comment bodies ESLint treats as inline configuration (same pattern as @eslint/json).
- *
- * @public
- * @type {RegExp}
- */
-const INLINE_CONFIG = /^\s*eslint(?:-enable|-disable(?:(?:-next)?-line)?)?(?:\s|$)/u;
-
-/**
- * Shared parser for `eslint-*` directive comments.
- *
- * @public
- * @type {ConfigCommentParser}
- */
-const commentParser = new ConfigCommentParser();
-
-/**
- * Tests whether a value is a positioned @cldmv/jsonv AST node.
- * @public
- * @param {unknown} value - Any property value of a node.
- * @returns {value is {type: string, [key: string]: unknown}} `true` for an object with a string `type` and a `loc`.
- * @example
- * isJsonvNode({ type: "Literal", loc: { start: {}, end: {} } }); // true
- */
-function isJsonvNode(value) {
-	return (
-		value !== null &&
-		typeof value === "object" &&
-		"type" in value &&
-		typeof value.type === "string" &&
-		"loc" in value &&
-		typeof value.loc === "object"
-	);
-}
-
-/**
- * Returns the child keys to visit for a node: its entry in {@link VISITOR_KEYS}, or — for a
- * node type @cldmv/jsonv may add later — every key holding a node or an array of nodes.
- * @public
- * @param {{type: string, [key: string]: unknown}} node - An AST node.
- * @returns {ReadonlyArray<string>} Child property names.
- * @example
- * getChildKeys({ type: "Property", key, value }); // ["key", "value"]
- */
-function getChildKeys(node) {
-	return (
-		VISITOR_KEYS[node.type] ??
-		Object.keys(node).filter((key) => {
-			const value = node[key];
-			return Array.isArray(value) ? value.some(isJsonvNode) : isJsonvNode(value);
-		})
-	);
-}
-
-/**
  * Converts a @cldmv/jsonv `loc` (1-based lines, 0-based columns, 0-based `offset`s) into the
  * ESLint `loc`/`range` pair for this language. The language declares `lineStart: 1` and
  * `columnStart: 1`, so columns are shifted to 1-based; `range` comes from the offsets.
@@ -559,186 +468,6 @@ function buildProgram({ program, comments, tokens }) {
 		comments: comments.map(convertLeaf),
 		tokens: tokens.map(convertLeaf)
 	};
-}
-
-/**
- * SourceCode for a parsed `.jsonv` file, modelled on @eslint/json's `JSONSourceCode`:
- * positions, lines and text helpers come from `TextSourceCodeBase`; this class adds AST
- * traversal, parent lookup and inline configuration (`eslint-disable*` / `eslint-enable`
- * directives and `/* eslint rule: ... *\/` config comments).
- *
- * @public
- * @extends {TextSourceCodeBase<{LangOptions: JsonvLanguageOptions, RootNode: JsonvProgram, SyntaxElementWithLoc: JsonvSyntaxElement, ConfigNode: JsonvComment}>}
- */
-class JsonvSourceCode extends TextSourceCodeBase {
-	/**
-	 * Cached traversal steps.
-	 * @type {VisitNodeStep[]|undefined}
-	 */
-	#steps;
-
-	/**
-	 * Parent of every non-root node.
-	 * @type {WeakMap<object, JsonvNode>}
-	 */
-	#parents = new WeakMap();
-
-	/**
-	 * Cached inline configuration comments.
-	 * @type {JsonvComment[]|undefined}
-	 */
-	#inlineConfigComments;
-
-	/**
-	 * Creates a SourceCode object.
-	 * @param {Object} options - Options.
-	 * @param {string} options.text - The source text.
-	 * @param {JsonvProgram} options.ast - The `Program` node built by `jsonvLanguage#parse`.
-	 */
-	constructor({ text, ast }) {
-		super({ text, ast, lineEndingPattern: LINE_ENDING_PATTERN });
-		/** @type {JsonvComment[]} Comments in source order. */
-		this.comments = ast.comments;
-		/** @type {JsonvToken[]} Tokens in source order, excluding comments. */
-		this.tokens = ast.tokens;
-		/** @type {boolean} Whether the text starts with a byte order mark. */
-		this.hasBOM = text.charCodeAt(0) === 0xfeff;
-	}
-
-	/**
-	 * Returns the source text split into lines (a fresh copy of `lines`).
-	 * @public
-	 * @returns {string[]} The lines.
-	 */
-	getLines() {
-		return [...this.lines];
-	}
-
-	/**
-	 * Walks the AST once, recording enter/exit steps and each node's parent.
-	 * @returns {VisitNodeStep[]} The traversal steps.
-	 */
-	#ensureTraversal() {
-		if (!this.#steps) {
-			/** @type {VisitNodeStep[]} */
-			const steps = [];
-			/**
-			 * @param {JsonvNode} node - The node to visit.
-			 * @param {JsonvNode|undefined} parent - Its parent (`undefined` for the root).
-			 */
-			const visit = (node, parent) => {
-				if (parent) this.#parents.set(node, parent);
-				steps.push(new VisitNodeStep({ target: node, phase: 1, args: [node, parent] }));
-				for (const key of getChildKeys(node)) {
-					// getChildKeys() only returns keys that hold a node or an array of nodes.
-					const child = /** @type {JsonvNode | JsonvNode[]} */ (/** @type {{type: string, [key: string]: unknown}} */ (node)[key]);
-					for (const item of Array.isArray(child) ? child : [child]) visit(item, node);
-				}
-				steps.push(new VisitNodeStep({ target: node, phase: 2, args: [node, parent] }));
-			};
-			visit(this.ast, undefined);
-			this.#steps = steps;
-		}
-		return this.#steps;
-	}
-
-	/**
-	 * Returns the enter/exit visit steps for every node, depth first in source order.
-	 * @public
-	 * @returns {IterableIterator<VisitNodeStep>} The traversal steps.
-	 */
-	traverse() {
-		return this.#ensureTraversal().values();
-	}
-
-	/**
-	 * Returns the parent of a node, or `undefined` for the `Program` root.
-	 * @public
-	 * @param {JsonvSyntaxElement} node - An AST node.
-	 * @returns {JsonvNode|undefined} The parent node.
-	 */
-	getParent(node) {
-		this.#ensureTraversal();
-		return this.#parents.get(node);
-	}
-
-	/**
-	 * Returns the comments that hold inline configuration (`eslint`, `eslint-enable`,
-	 * `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`).
-	 * @public
-	 * @returns {JsonvComment[]} The inline configuration comments.
-	 */
-	getInlineConfigNodes() {
-		if (!this.#inlineConfigComments) {
-			this.#inlineConfigComments = this.comments.filter((comment) => INLINE_CONFIG.test(comment.value));
-		}
-		return this.#inlineConfigComments;
-	}
-
-	/**
-	 * Returns the `eslint-disable*` / `eslint-enable` directives, plus problems for malformed
-	 * ones (an `eslint-disable-line` spanning several lines).
-	 * @public
-	 * @returns {{problems: FileProblem[], directives: Directive[]}} Directives and problems.
-	 */
-	getDisableDirectives() {
-		/** @type {FileProblem[]} */
-		const problems = [];
-		/** @type {Directive[]} */
-		const directives = [];
-
-		for (const comment of this.getInlineConfigNodes()) {
-			// parseDirective() returns undefined only for text that doesn't start with a directive label;
-			// every comment here matched INLINE_CONFIG, which requires one.
-			const { label, value, justification } = /** @type {NonNullable<ReturnType<ConfigCommentParser["parseDirective"]>>} */ (
-				commentParser.parseDirective(comment.value)
-			);
-
-			if (label === "eslint-disable-line" && comment.loc.start.line !== comment.loc.end.line) {
-				problems.push({ ruleId: null, message: `${label} comment should not span multiple lines.`, loc: comment.loc });
-				continue;
-			}
-
-			if (label !== "eslint") {
-				// The comment matched INLINE_CONFIG, so any label other than "eslint" is an
-				// `eslint-disable*` / `eslint-enable` label, i.e. a DirectiveType once unprefixed.
-				const type = /** @type {DirectiveType} */ (label.slice("eslint-".length));
-				directives.push(new Directive({ type, node: comment, value, justification }));
-			}
-		}
-
-		return { problems, directives };
-	}
-
-	/**
-	 * Returns the rule configurations from `/* eslint rule: ... *\/` comments, plus problems for
-	 * ones that fail to parse.
-	 * @public
-	 * @returns {{problems: FileProblem[], configs: Array<{config: {rules: RulesConfig}, loc: SourceLocation}>}} Configs and problems.
-	 */
-	applyInlineConfig() {
-		/** @type {FileProblem[]} */
-		const problems = [];
-		/** @type {Array<{config: {rules: RulesConfig}, loc: SourceLocation}>} */
-		const configs = [];
-
-		for (const comment of this.getInlineConfigNodes()) {
-			// Defined for the same reason as in getDisableDirectives().
-			const { label, value } = /** @type {NonNullable<ReturnType<ConfigCommentParser["parseDirective"]>>} */ (
-				commentParser.parseDirective(comment.value)
-			);
-			if (label !== "eslint") continue;
-
-			const parseResult = commentParser.parseJSONLikeConfig(value);
-			if (parseResult.ok) {
-				configs.push({ config: { rules: parseResult.config }, loc: comment.loc });
-			} else {
-				problems.push({ ruleId: null, message: parseResult.error.message, loc: comment.loc });
-			}
-		}
-
-		return { problems, configs };
-	}
 }
 
 /**
@@ -943,4 +672,3 @@ const plugin = {
 };
 
 export default plugin;
-export { JsonvSourceCode };
