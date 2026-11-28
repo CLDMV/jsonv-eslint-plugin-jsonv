@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-11-01T12:07:54-08:00 (1793563674)
+ *	@Last modified time: 2026-11-07T20:58:02-08:00 (1794113882)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -16,7 +16,7 @@
 /**
  * @fileoverview Checks the built dist/ output: `require()` of dist/index.cjs returns the same
  * plugin object as the ESM default export of dist/index.mjs, and that object works with ESLint.
- * Run after `npm run build` (see `test:dist`).
+ * Run after `npm run build` (see `test:cjs`).
  */
 "use strict";
 
@@ -38,6 +38,27 @@ test("dist/index.cjs is the ESM default export", async () => {
 
 test("dist/index.cjs is a verbatim copy of src/index.cjs, not a bundle", () => {
 	assert.equal(fs.readFileSync(path.join(dist, "index.cjs"), "utf8"), fs.readFileSync(path.join(root, "src/index.cjs"), "utf8"));
+});
+
+test("dist/ has one file per src/ module, not a bundle", () => {
+	const built = fs
+		.readdirSync(dist)
+		.filter((name) => name.endsWith(".mjs"))
+		.sort();
+	const sources = fs
+		.readdirSync(path.join(root, "src"))
+		.filter((name) => name.endsWith(".mjs"))
+		.sort();
+	assert.deepEqual(built, sources);
+	assert.ok(!fs.readFileSync(path.join(dist, "index.mjs"), "utf8").includes("class JsonvSourceCode"));
+});
+
+test("the ./source-code subpath resolves to dist/ without the dev condition", () => {
+	const { spawnSync } = require("node:child_process");
+	const probe = 'console.log(require.resolve("@cldmv/eslint-plugin-jsonv/source-code"))';
+	const plain = spawnSync(process.execPath, ["-e", probe], { cwd: root, encoding: "utf8" });
+	assert.equal(plain.status, 0, plain.stderr);
+	assert.equal(plain.stdout.trim(), path.join(dist, "source-code.mjs"));
 });
 
 test("the built plugin reads its meta from the package root", () => {

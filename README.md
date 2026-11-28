@@ -8,17 +8,17 @@ ESLint plugin for validating `.jsonv` files using the [@cldmv/jsonv](https://git
 
 ## ✨ What's New
 
-### Latest: v1.1.2 (November 2026)
+### Latest: v2.0.0 (November 2026)
 
-- **Tooling release, no plugin changes** — the vitest config now uses `devCondition()` from `@cldmv/configs`, so tests really run against `src/` through the `eslint-plugin-jsonv-dev` export condition, and the type scripts are split into `types:check` and `types:build` ([#92](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/pull/92), [#94](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/pull/94)). No rule, language or option changed.
-- [View full v1.1.2 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.2.md)
+- **`JsonvSourceCode` moved to its own subpath** — the package root now exports only the plugin, and rule authors import the class with `import { JsonvSourceCode } from "@cldmv/eslint-plugin-jsonv/source-code"`. The rules, language and options are unchanged, and `require()` and the default import still return the plugin ([#109](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/pull/109)).
+- [View full v2.0.0 Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v2/v2.0.0.md)
 
 ### Recent Releases
 
+- **v1.1.2** (November 2026) — tooling release: tests run against `src/` through `devCondition()`, type scripts split into `types:check` and `types:build`; no plugin code changed ([#92](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/pull/92), [#94](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/pull/94)) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.2.md))
 - **v1.1.1** (November 2026) — `engines.node` back to the runtime range `^20.19.0 || ^22.13.0 || >=24`; the 22.22.0 development floor moves to `devEngines` ([#88](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/pull/88)) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.1.md))
 - **v1.1.0** (November 2026) — plugin moved into `src/`, built with tsup, with a `require()` entry and an `eslint-plugin-jsonv-dev` export condition; `engines.node` narrowed to `>=22.22.0` (#82, #83) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.1.0.md))
 - **v1.0.17** (October 2026) — development dependencies only: `eslint` 10.12.0, vitest 5.0.3 and `@cldmv/vitest-runner` 1.5.3; no plugin code changed (#59, #60, #62, #64) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.17.md))
-- **v1.0.16** (October 2026) — header tooling on `@cldmv/fix-headers` 2.2.0 and `@cldmv/configs` 1.2.4; no plugin code or runtime dependency changed (#54, #57) ([Changelog](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/blob/master/docs/changelog/v1/v1.0.16.md))
 
 📚 **For complete version history, see [docs/changelog/](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/tree/master/docs/changelog/) and the [GitHub Releases](https://github.com/CLDMV/jsonv-eslint-plugin-jsonv/releases).**
 
@@ -74,7 +74,7 @@ node --conditions=eslint-plugin-jsonv-dev app.mjs
 export NODE_OPTIONS=--conditions=eslint-plugin-jsonv-dev
 ```
 
-The test suite sets the condition itself, so `npm test` runs against `src/`, then `npm run test:dist` builds and checks `dist/`.
+The test suite sets the condition itself, so `npm test` runs against `src/`, then `npm run test:cjs` builds and checks `dist/`. `npm run test:dist` builds and runs the Vitest suite against `dist/` instead.
 
 ## Usage
 
@@ -109,6 +109,16 @@ module.exports = [
 	}
 ];
 ```
+
+### `JsonvSourceCode` for rule authors
+
+The package root exports only the plugin. The `SourceCode` class the language hands to rules (`context.sourceCode`) is on its own subpath, for `instanceof` checks and type annotations:
+
+```javascript
+import { JsonvSourceCode } from "@cldmv/eslint-plugin-jsonv/source-code";
+```
+
+Before v2.0.0 it was a named export of the package root.
 
 ### Configuration Options
 

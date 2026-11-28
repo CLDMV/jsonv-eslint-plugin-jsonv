@@ -7,7 +7,7 @@
  *	@Email: <Shinrai@users.noreply.github.com>
  *	-----
  *	@Last modified by: Nate Corcoran <CLDMV> (Shinrai@users.noreply.github.com)
- *	@Last modified time: 2026-11-01T12:07:55-08:00 (1793563675)
+ *	@Last modified time: 2026-11-07T22:16:58-08:00 (1794118618)
  *	-----
  *	@Copyright: Copyright (c) 2013-2026 Catalyzed Motivation Inc. All rights reserved.
  *
@@ -26,7 +26,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Linter } from "eslint";
 import { describe, expect, it } from "vitest";
-import plugin from "../src/index.mjs";
+import plugin from "@cldmv/eslint-plugin-jsonv";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readme = readFileSync(path.join(root, "README.md"), "utf8");

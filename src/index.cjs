@@ -14,18 +14,19 @@
  */
 
 /**
- * CommonJS entry point: a thin, synchronous re-export of the ESM plugin.
+ * CommonJS entry point: the generic CLDMV shim over the ESM plugin.
  *
  * Node's `require()` loads an ES module synchronously as long as its module graph has no
  * top-level await, so this file re-exports `./index.mjs` instead of a second CJS bundle.
- * `require("@cldmv/eslint-plugin-jsonv")` returns the plugin object itself (the ESM default
- * export), which is the shape an `eslint.config.cjs` puts under `plugins`.
+ * The package root has a single export, the plugin, so `require("@cldmv/eslint-plugin-jsonv")`
+ * returns the plugin object itself, the shape an `eslint.config.cjs` puts under `plugins`.
+ * `JsonvSourceCode` lives on its own subpath, `@cldmv/eslint-plugin-jsonv/source-code`.
  *
  * Node.js versions without require(esm) would fail with a bare ERR_REQUIRE_ESM, so the check
  * below fails early with a message that says what to do instead.
  *
  * tsup.config.mjs copies this file verbatim to dist/index.cjs. Its `require("./index.mjs")`
- * resolves to the sibling src/index.mjs in a checkout and to the bundle in dist/.
+ * resolves to the sibling src/index.mjs in a checkout and to dist/index.mjs in a build.
  *
  * @module @cldmv/eslint-plugin-jsonv
  */
@@ -39,4 +40,10 @@ if (!process.features?.require_module) {
 	throw error;
 }
 
-module.exports = require("./index.mjs").default;
+const esm = require("./index.mjs");
+const values = new Set(
+	Object.keys(esm)
+		.filter((key) => key !== "__esModule")
+		.map((key) => esm[key])
+);
+module.exports = values.size === 1 ? values.values().next().value : esm;
